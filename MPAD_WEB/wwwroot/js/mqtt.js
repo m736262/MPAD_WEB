@@ -341,14 +341,38 @@ let isPaused = false;
 function togglePausePlay(event) {
     if (event) event.stopPropagation();
 
+    // สลับสถานะ paused
     isPaused = !isPaused;
     const command = isPaused ? "PAUSE" : "PLAY";
 
+    // ส่งคำสั่งผ่าน MQTT
     sentMessage({ playControl: command });
 
-    const btnIcon = document.getElementById('btnPauseIcon');
-    if (btnIcon) {
-        btnIcon.innerText = isPaused ? "play_arrow" : "pause";
+    // อัปเดตไอคอนของปุ่มต่างๆ ที่เกี่ยวข้อง
+    const btnIcon = document.getElementById('btnPauseIcon');               // mini bar
+    const playingIcon = document.getElementById('playingFullPauseIcon');   // playing full view (ไอคอนภายในปุ่มกลาง)
+    const playingMain = document.getElementById('playingMainToggle');      // ปุ่มกลางตัวจริง (ถ้าต้องการเปลี่ยน class/สี)
+
+    const iconName = isPaused ? "play_arrow" : "pause";
+
+    if (btnIcon) btnIcon.innerText = iconName;
+    if (playingIcon) playingIcon.innerText = iconName;
+
+    // (ออปชัน) ปรับสไตล์ปุ่มกลางเมื่อ paused / playing
+    if (playingMain) {
+        if (isPaused) {
+            // ตัวอย่าง: เปลี่ยนพื้นหลังให้จางลงเมื่อเป็น paused
+            playingMain.classList.remove('bg-[#00e5ff]');
+            playingMain.classList.add('bg-white/5');
+            playingMain.classList.remove('text-slate-950');
+            playingMain.classList.add('text-white');
+        } else {
+            // กลับเป็นสีเดิมเมื่อเล่น
+            playingMain.classList.remove('bg-white/5');
+            playingMain.classList.add('bg-[#00e5ff]');
+            playingMain.classList.remove('text-white');
+            playingMain.classList.add('text-slate-950');
+        }
     }
 }
 

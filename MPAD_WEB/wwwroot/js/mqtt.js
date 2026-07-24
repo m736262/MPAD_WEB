@@ -453,9 +453,49 @@ function renderQueueUI(data) {
     // ==========================================
     // 🔊 อัปเดต Volume
     // ==========================================
+    // ===== อัปเดต Volume slider & แสดงผลจาก MQTT (ไม่ให้ trigger handler) =====
     if (data.volumeStatus !== undefined) {
-        const volumeDisplay = document.getElementById('volumeDisplay');
-        if (volumeDisplay) volumeDisplay.innerText = `${data.volumeStatus}%`;
+        const vol = Number(data.volumeStatus);
+        const slider = document.getElementById('volumeSlider');
+        const volumeValueText = document.getElementById('volumeValueText');
+
+        // ป้องกันไม่ให้ handler local ยิงค่าออกไปเป็น MQTT ขณะอัปเดต
+        suppressVolumeSend = true;
+
+        if (slider) {
+            slider.value = isNaN(vol) ? slider.value : vol;
+        }
+        if (volumeValueText) {
+            volumeValueText.innerText = isNaN(vol) ? volumeValueText.innerText : String(vol);
+        }
+
+        // เคลียร์ flag หลังเล็กน้อย (ให้ handler กลับมาทำงานได้)
+        setTimeout(() => { suppressVolumeSend = false; }, 300);
+    }
+
+    // ===== อัปเดตสถานะ Mute ถ้ามี =====
+    if (data.muteStatus !== undefined) {
+        isMuted = String(data.muteStatus).toLowerCase() === 'mute';
+        const muteIcon = document.getElementById('playingMuteIcon');
+        const muteBtn = document.getElementById('playingMuteToggle');
+        const slider = document.getElementById('volumeSlider');
+
+        if (muteIcon) muteIcon.innerText = isMuted ? 'volume_off' : 'volume_up';
+
+        if (muteBtn) {
+            if (isMuted) {
+                muteBtn.classList.add('opacity-50');
+            } else {
+                muteBtn.classList.remove('opacity-50');
+            }
+        }
+        if (slider) {
+            if (isMuted) {
+                slider.classList.add('opacity-50', 'pointer-events-none');
+            } else {
+                slider.classList.remove('opacity-50', 'pointer-events-none');
+            }
+        }
     }
 
     // ==========================================
@@ -669,6 +709,64 @@ function renderQueueUI(data) {
     if (playingCurrentTime) playingCurrentTime.innerText = elapsedStr;
     if (playingTotalTime) playingTotalTime.innerText = durationStr;
     if (playingFullPauseIcon) playingFullPauseIcon.innerText = isPaused ? 'play_arrow' : 'pause';
+
+    if (data.audioStatus !== undefined) {
+        try {
+            // อาจเป็น string เช่น "karaoke" หรือ object ขึ้นกับผู้ส่ง — ให้แปลงเป็น string
+            const audioState = String(data.audioStatus).toLowerCase();
+            updateAudioChannelUI(audioState);
+        } catch (err) {
+            console.warn('Failed to update audio channel UI from mqtt data:', err);
+        }
+    }
+}
+
+// ===== Mute control =====
+let isMuted = false;
+
+// ฟังก์ชันเรียกเมื่อกดปุ่ม mute
+function toggleMute(e) {
+    if (e && e.stopPropagation) e.stopPropagation();
+
+    isMuted = !isMuted;
+    const action = isMuted ? 'mute' : 'unmute';
+
+    // ส่ง MQTT เฉพาะเมื่อเชื่อมต่อ (optional)
+    if (typeof sentMessage === 'function') {
+        sentMessage({ muteControl: action });
+    } else {
+        console.warn("sentMessage() not available to send muteControl:", action);
+    }
+
+    // อัปเดตไอคอนปุ่ม
+    const muteIcon = document.getElementById('playingMuteIcon');
+    if (muteIcon) {
+        muteIcon.innerText = isMuted ? 'volume_off' : 'volume_up';
+    }
+
+    // ถ้าต้องการ ปิดการส่ง volume ขณะ muted หรือปรับให้ slider ดู disabled
+    const slider = document.getElementById('volumeSlider');
+    const volumeValueText = document.getElementById('volumeValueText');
+    if (slider) {
+        if (isMuted) {
+            // เก็บค่าปัจจุบันไว้ถ้าต้องการ (optional)
+            slider.dataset.prevValue = slider.value;
+            slider.classList.add('opacity-50', 'pointer-events-none'); // กึ่งปิดการใช้งานเชิง UI
+        } else {
+            slider.classList.remove('opacity-50', 'pointer-events-none');
+            // ถ้าต้องการคืนค่าอัตโนมัติ:
+            // slider.value = slider.dataset.prevValue || slider.value;
+            // if (volumeValueText) volumeValueText.innerText = slider.value;
+            // และส่งค่า volume กลับเมื่อ unmute (optional)
+            // sendVolumeControl(slider.value);
+        }
+    }
+
+    // (ออปชัน) อัปเดตปุ่มกลาง/mini bar ถ้าต้องการสอดคล้องกัน
+    const btnIcon = document.getElementById('btnPauseIcon');
+    if (btnIcon) {
+        // ไม่เปลี่ยนอะไร แต่ถ้าต้องใช้ icon แสดง mute ให้เพิ่ม logic ที่นี่
+    }
 }
 
 // ====== Volume control -> ส่ง MQTT (เพิ่มลงใน MPAD_WEB/wwwroot/js/mqtt.js) ======
@@ -695,20 +793,22 @@ function sendVolumeControl(value) {
 
 // ตัวจัดการ input event (debounced) — ใช้เมื่อผู้ใช้ลากสไลเดอร์
 function handleVolumeInputEvent(e) {
+    // ถ้าเป็นการอัพเดตจาก MQTT ให้ไม่ส่ง
+    if (suppressVolumeSend || isMuted) return;
+
     const val = e.target ? e.target.value : e;
-    // อัปเดต UI (ถ้ามี element แสดงค่า)
     const volumeValueText = document.getElementById('volumeValueText');
     if (volumeValueText) volumeValueText.innerText = String(val);
 
-    // debounce เพื่อไม่ให้ยิงบ่อยเกินตอนลาก
     if (volumeSendTimeout) clearTimeout(volumeSendTimeout);
     volumeSendTimeout = setTimeout(() => {
         sendVolumeControl(val);
     }, VOLUME_DEBOUNCE_MS);
 }
 
-// ส่งทันทีเมื่อปล่อยสไลเดอร์ (change event) เพื่อให้แน่ใจว่าได้ค่าสุดท้าย
 function handleVolumeChangeEvent(e) {
+    if (suppressVolumeSend || isMuted) return;
+
     const val = e.target ? e.target.value : e;
     if (volumeSendTimeout) { clearTimeout(volumeSendTimeout); volumeSendTimeout = null; }
     sendVolumeControl(val);
@@ -727,3 +827,48 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Volume control bind error:', err);
     }
 });
+
+// ===== Audio channel control (MQTT send + UI update) =====
+
+// ส่งคำสั่ง audio channel ผ่าน MQTT
+function sendMqttChannelCommand(type) {
+    if (!type) return;
+    const t = String(type).toLowerCase();
+
+    // ป้องกันการส่งค่าที่ไม่รู้จัก
+    if (!['stereo', 'vocal', 'karaoke'].includes(t)) {
+        console.warn('Unknown audio channel command:', type);
+        return;
+    }
+
+    const payload = { audioControl: t };
+
+    // ตรวจการเชื่อมต่อก่อน (optional)
+    if (typeof sentMessage === 'function') {
+        sentMessage(payload);
+        console.log('Sent audioControl via MQTT:', t);
+    } else {
+        console.warn('sentMessage() not available to send audioControl:', t);
+    }
+}
+
+// อัปเดตปุ่ม Audio Channel UI เท่านั้น (ไม่ส่ง MQTT) — ถูกเรียกเมื่อได้รับสถานะจาก MQTT
+function updateAudioChannelUI(type) {
+    const t = (type || '').toString().toLowerCase();
+
+    const btnStereo = document.getElementById('btnAudioStereo');
+    const btnVocal = document.getElementById('btnAudioVocal');
+    const btnKaraoke = document.getElementById('btnAudioKaraoke');
+
+    // สไตล์ที่ใช้ใน home.cshtml (ซ้ำกับ logic ตรงนั้นเพื่อให้หน้าตาเหมือนกัน)
+    const inactiveStyle = "py-3 px-2 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-95 text-slate-300 text-xs font-bold flex flex-col items-center gap-1 transition-all border border-white/5";
+    const activeCyanStyle = "py-3 px-2 rounded-2xl bg-gradient-to-b from-cyan-500/20 to-cyan-500/5 text-cyan-400 border border-cyan-500/40 text-xs font-bold flex flex-col items-center gap-1 transition-all";
+
+    if (btnStereo) btnStereo.className = inactiveStyle;
+    if (btnVocal) btnVocal.className = inactiveStyle;
+    if (btnKaraoke) btnKaraoke.className = inactiveStyle;
+
+    if (t === 'stereo' && btnStereo) btnStereo.className = activeCyanStyle;
+    if (t === 'vocal' && btnVocal) btnVocal.className = activeCyanStyle;
+    if (t === 'karaoke' && btnKaraoke) btnKaraoke.className = activeCyanStyle;
+}

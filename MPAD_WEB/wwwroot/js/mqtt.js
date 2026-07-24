@@ -1027,8 +1027,213 @@ function attachSwipeHandlersForQueueItems() {
     });
 }
 
-// ============================
-// ปรับ renderQueueUI ให้ใส่ data-playlist-index และ data-song-id ในแต่ละ item
-// ============================
-// ในฟังก์ชัน renderQueueUI(data) แทนที่ส่วนที่สร้าง queueHTML ด้วยโค้ดด้านล่าง
-// (ค้นหาโค้ดที่สร้าง queueHTML = nextQueue.map(...).join('') แล้วแทนที่)
+// ====== Move (drag up/down) Queue items + MQTT MVQ sender ======
+
+// ส่งคำสั่งย้ายคิวผ่าน MQTT
+function sendMoveQueueMqtt(indexSrc, songId, indexDes) {
+    if (indexSrc === undefined || songId === undefined || indexDes === undefined) return;
+    const payload = {
+        playListControl: "MVQ",
+        playListControlData: [`${indexSrc}|${songId}|${indexDes}`]
+    };
+
+    if (typeof sentMessage === 'function') {
+        sentMessage(payload);
+        console.log('Sent MVQ via MQTT:', payload);
+    } else {
+        console.warn('sentMessage() not available to send MVQ payload', payload);
+    }
+}
+
+// อัปเดต data-playlist-index สำหรับทุกรายการใน container (recompute)
+function refreshPlaylistIndexes() {
+    const queueContainer = document.getElementById('queueItemsContainer');
+    if (!queueContainer) return;
+    const items = Array.from(queueContainer.children);
+    // songList index mapping: item 0 => playlist index 1 (since 0 is now playing)
+    // But we used data-playlist-index when creating items. We recalc relative to playlist:
+    items.forEach((el, i) => {
+        // i corresponds to nextQueue index (0 => playlistIndex 1)
+        const playlistIndex = i + 1; // keep same convention as other code
+        el.setAttribute('data-playlist-index', playlistIndex);
+    });
+}
+
+// ฟังก์ชันผูก handlers ทั้ง swipe และ drag (ทดแทน attachSwipeHandlersForQueueItems)
+function attachQueueInteractionHandlers() {
+    const queueContainer = document.getElementById('queueItemsContainer');
+    if (!queueContainer) return;
+
+    const items = Array.from(queueContainer.querySelectorAll('.queue-item'));
+    const SWIPE_THRESHOLD = 80;
+    const MOVE_THRESHOLD = 6; // minimal px to start move
+    items.forEach(itemEl => {
+        if (itemEl.__queueHandlersBound) return;
+        itemEl.__queueHandlersBound = true;
+
+        let startX = 0, startY = 0;
+        let currentX = 0, currentY = 0;
+        let dragging = false;
+        let mode = null; // 'swipe' or 'move'
+        let pointerId = null;
+
+        // placeholder for move
+        let placeholder = null;
+        let originalIndex = null;
+
+        function createPlaceholder(height) {
+            const ph = document.createElement('div');
+            ph.className = 'queue-placeholder';
+            ph.style.height = `${height}px`;
+            ph.style.margin = getComputedStyle(itemEl).margin;
+            ph.style.borderRadius = getComputedStyle(itemEl).borderRadius;
+            ph.style.background = 'transparent';
+            ph.style.transition = 'height 120ms';
+            return ph;
+        }
+
+        itemEl.addEventListener('pointerdown', (ev) => {
+            if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+            pointerId = ev.pointerId;
+            startX = currentX = ev.clientX;
+            startY = currentY = ev.clientY;
+            dragging = true;
+            mode = null;
+            itemEl.style.transition = ''; // cancel transitions while interacting
+            itemEl.setPointerCapture && itemEl.setPointerCapture(pointerId);
+        });
+
+        itemEl.addEventListener('pointermove', (ev) => {
+            if (!dragging) return;
+            currentX = ev.clientX;
+            currentY = ev.clientY;
+            const dx = currentX - startX;
+            const dy = currentY - startY;
+
+            // determine mode when movement exceeds small threshold
+            if (!mode) {
+                if (Math.abs(dy) > MOVE_THRESHOLD && Math.abs(dy) > Math.abs(dx)) {
+                    mode = 'move';
+                    // prepare move: insert placeholder and make item absolute
+                    const rect = itemEl.getBoundingClientRect();
+                    placeholder = createPlaceholder(rect.height);
+                    itemEl.parentNode.insertBefore(placeholder, itemEl.nextSibling);
+                    originalIndex = Array.from(queueContainer.children).indexOf(itemEl);
+                    itemEl.style.position = 'relative';
+                    itemEl.style.zIndex = '999';
+                    itemEl.style.willChange = 'transform';
+                    itemEl.style.boxShadow = '0 12px 30px rgba(0,0,0,0.12)';
+                } else if (Math.abs(dx) > MOVE_THRESHOLD && Math.abs(dx) > Math.abs(dy)) {
+                    mode = 'swipe';
+                    // for swipe we reuse earlier behavior: translateX
+                } else {
+                    return;
+                }
+            }
+
+            if (mode === 'swipe') {
+                // horizontal translate to right only
+                if (dx > 0) {
+                    const translate = Math.min(dx, 160);
+                    itemEl.style.transform = `translateX(${translate}px)`;
+                } else {
+                    itemEl.style.transform = 'translateX(0)';
+                }
+            } else if (mode === 'move') {
+                // move vertically: translate the element according to dy
+                itemEl.style.transform = `translateY(${dy}px)`;
+
+                // determine insertion position relative to siblings
+                const allItems = Array.from(queueContainer.querySelectorAll('.queue-item')).filter(el => el !== itemEl && el !== placeholder);
+                // find element whose midY is greater than current center to insert before it
+                const itemCenterY = itemEl.getBoundingClientRect().top + (itemEl.getBoundingClientRect().height / 2) + dy;
+                let insertBeforeEl = null;
+                for (let sibling of allItems) {
+                    const r = sibling.getBoundingClientRect();
+                    const mid = r.top + r.height / 2;
+                    if (itemCenterY < mid) { insertBeforeEl = sibling; break; }
+                }
+                if (insertBeforeEl) {
+                    queueContainer.insertBefore(placeholder, insertBeforeEl);
+                } else {
+                    queueContainer.appendChild(placeholder);
+                }
+            }
+        });
+
+        function endInteraction(ev) {
+            if (!dragging) return;
+            dragging = false;
+            itemEl.style.transition = 'transform 180ms cubic-bezier(.2,.8,.2,1)';
+            const dx = (ev && ev.clientX ? ev.clientX : currentX) - startX;
+            const dy = (ev && ev.clientY ? ev.clientY : currentY) - startY;
+
+            if (mode === 'swipe') {
+                // handle swipe to delete (same as previous threshold)
+                if (dx >= SWIPE_THRESHOLD) {
+                    const playlistIndexAttr = itemEl.getAttribute('data-playlist-index');
+                    const songIdAttr = itemEl.getAttribute('data-song-id');
+                    const playlistIndex = playlistIndexAttr !== null ? Number(playlistIndexAttr) : undefined;
+                    const songId = songIdAttr !== null ? songIdAttr : undefined;
+                    sendDeleteQueueMqtt(playlistIndex, songId);
+                    // remove element with animation
+                    itemEl.style.transform = `translateX(120%)`;
+                    itemEl.style.opacity = '0';
+                    setTimeout(() => { if (itemEl.parentNode) itemEl.parentNode.removeChild(itemEl); refreshPlaylistIndexes(); }, 240);
+                } else {
+                    itemEl.style.transform = 'translateX(0)';
+                }
+            } else if (mode === 'move') {
+                // finalize move
+                // find new index based on placeholder position
+                const children = Array.from(queueContainer.querySelectorAll('.queue-item'));
+                // If placeholder exists, compute its index among queue-items (placeholder sits among children)
+                let childrenAll = Array.from(queueContainer.children);
+                const newPos = childrenAll.indexOf(placeholder);
+                // compute playlist indices: placeholder index corresponds to position in nextQueue
+                // playlistIndex = placeholder position (0 -> playlistIndex 1)
+                const newPlaylistIndex = newPos; // since items in queueContainer represent nextQueue starting at 0 => playlistIndex = newPos + 1
+                // originalIndex is index before placeholder insertion; find original playlist index
+                const origPlaylistIndex = Number(itemEl.getAttribute('data-playlist-index'));
+                const songId = itemEl.getAttribute('data-song-id');
+
+                // remove inline transform/styles and insert element at placeholder
+                itemEl.style.transform = 'translateY(0)';
+                itemEl.style.boxShadow = '';
+                itemEl.style.zIndex = '';
+                itemEl.style.position = '';
+                if (placeholder && placeholder.parentNode) {
+                    queueContainer.insertBefore(itemEl, placeholder);
+                    placeholder.parentNode.removeChild(placeholder);
+                }
+
+                // refresh data-playlist-index attributes for all items
+                refreshPlaylistIndexes();
+
+                // determine indexSrc and indexDes in playlist index space (0-based, with now playing=0)
+                // our data-playlist-index uses playlistIndex = nextQueueIndex + 1
+                const indexSrc = origPlaylistIndex !== null ? Number(origPlaylistIndex) : undefined;
+                const indexDes = itemEl.getAttribute('data-playlist-index') ? Number(itemEl.getAttribute('data-playlist-index')) : undefined;
+
+                // if changed, send MQTT MVQ
+                if (indexSrc !== undefined && indexDes !== undefined && indexSrc !== indexDes) {
+                    sendMoveQueueMqtt(indexSrc, songId, indexDes);
+                }
+            } else {
+                // no mode detected — just reset
+                itemEl.style.transform = 'translateX(0)';
+            }
+
+            // cleanup
+            try { itemEl.releasePointerCapture && itemEl.releasePointerCapture(pointerId); } catch(e){}
+            mode = null;
+            placeholder = null;
+            originalIndex = null;
+        }
+
+        itemEl.addEventListener('pointerup', endInteraction);
+        itemEl.addEventListener('pointercancel', endInteraction);
+        itemEl.addEventListener('mouseleave', (ev) => { if (dragging) endInteraction(ev); });
+        itemEl.addEventListener('dragstart', (e) => e.preventDefault());
+    });
+}

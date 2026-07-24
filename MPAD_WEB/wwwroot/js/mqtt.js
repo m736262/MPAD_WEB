@@ -623,41 +623,41 @@ function renderQueueUI(data) {
     // 4. Queue View: รายการคิวถัดไป (Queue List)
     // ==========================================
     const queueContainer = document.getElementById('queueItemsContainer');
+    // ===== ปรับสร้าง Queue HTML ให้มี data-playlist-index และ data-song-id =====
     if (queueContainer) {
-        const nextQueue = songList.slice(1);
-
+        const nextQueue = songList.slice(1); // nextQueue[0] corresponds to playlist index 1
         if (nextQueue.length === 0) {
             queueContainer.innerHTML = `
             <div class="text-center py-8 text-on-surface-variant text-xs bg-surface-container/40 rounded-3xl border border-white/5">
                 ไม่มีคิวเพลงถัดไป
             </div>`;
         } else {
-            const queueHTML = nextQueue.map((song, index) => {
-                const isNextUp = index === 0;
+            // สร้างรายการ และใส่ data attributes: data-playlist-index (absolute in playlist) + data-song-id
+            const queueHTML = nextQueue.map((song, idx) => {
+                const playlistIndex = idx + 1; // เพราะ songList[0] เป็น now playing
                 const userName = song.username || 'Guest';
                 const userInitial = userName.charAt(0).toUpperCase();
-                const userImage = song.user_image || ''; // 👈 ดึง Image URL ของผู้ใช้ที่แมปไว้
+                const userImage = song.user_image || '';
 
                 return `
-            <div class="bg-surface-container/70 p-4 rounded-3xl flex items-center justify-between border border-white/5 hover:bg-surface-container transition-all">
+            <div class="queue-item bg-surface-container/70 p-4 rounded-3xl flex items-center justify-between border border-white/5 hover:bg-surface-container transition-all"
+                 data-playlist-index="${playlistIndex}"
+                 data-song-id="${escapeHtml(song.id)}">
                 <div class="flex items-center gap-3.5 min-w-0 pr-2">
-                    <div class="w-14 h-14 shrink-0 rounded-2xl overflow-hidden ${isNextUp ? 'bg-purple-900/40' : 'bg-slate-800'} flex items-center justify-center">
+                    <div class="w-14 h-14 shrink-0 rounded-2xl overflow-hidden ${idx === 0 ? 'bg-purple-900/40' : 'bg-slate-800'} flex items-center justify-center">
                         ${song.image_url ? `<img src="${song.image_url}" class="w-full h-full object-cover" />` : `
-                        <span class="material-symbols-outlined ${isNextUp ? 'text-purple-400' : 'text-slate-400'}">
-                            ${isNextUp ? 'graphic_eq' : 'music_note'}
+                        <span class="material-symbols-outlined ${idx === 0 ? 'text-purple-400' : 'text-slate-400'}">
+                            ${idx === 0 ? 'graphic_eq' : 'music_note'}
                         </span>`}
                     </div>
                     <div class="min-w-0">
-                        ${isNextUp ? '<span class="text-[10px] font-bold tracking-widest text-slate-400 uppercase">NEXT UP</span>' : ''}
-                        <h4 class="font-bold text-on-surface text-base truncate ${isNextUp ? 'mt-0.5' : ''}">${escapeHtml(song.title)}</h4>
+                        ${idx === 0 ? '<span class="text-[10px] font-bold tracking-widest text-slate-400 uppercase">NEXT UP</span>' : ''}
+                        <h4 class="font-bold text-on-surface text-base truncate ${idx === 0 ? 'mt-0.5' : ''}">${escapeHtml(song.title)}</h4>
                         <p class="text-xs text-on-surface-variant truncate">${escapeHtml(song.singer)}</p>
                         <div class="flex items-center gap-1.5 mt-1 text-xs text-on-surface-variant">
-                            
-                            <!-- 🖼️ สลับแสดงระหว่างรูปโปรไฟล์จริง กับ ตัวอักษรย่อ -->
                             <div class="w-4 h-4 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-amber-500/30 text-amber-300 text-[9px] font-bold">
                                 ${userImage ? `<img src="${userImage}" class="w-full h-full object-cover" alt="${escapeHtml(userName)}" />` : userInitial}
                             </div>
-
                             <span>Added by <strong class="text-on-surface">${escapeHtml(userName)}</strong></span>
                         </div>
                     </div>
@@ -667,6 +667,10 @@ function renderQueueUI(data) {
             }).join('');
 
             queueContainer.innerHTML = queueHTML;
+
+            // หลังจากใส่ HTML แล้ว ผูก swipe handlers ให้แต่ละรายการ
+            // ให้หน่วงนิดหนึ่งเพื่อให้ DOM อัพเดตเสร็จ
+            setTimeout(() => attachSwipeHandlersForQueueItems(), 20);
         }
     }
 
@@ -903,3 +907,128 @@ function updateAudioChannelUI(type) {
     if (t === 'vocal' && btnVocal) btnVocal.className = activeCyanStyle;
     if (t === 'karaoke' && btnKaraoke) btnKaraoke.className = activeCyanStyle;
 }
+
+
+// ============================
+// Swipe-to-delete for Queue items + MQTT DELQ sender
+// ============================
+
+// ส่งคำสั่งลบคิวผ่าน MQTT
+function sendDeleteQueueMqtt(playlistIndex, songId) {
+    if (playlistIndex === undefined || songId === undefined) return;
+    const payload = {
+        playListControl: "DELQ",
+        playListControlData: [`${playlistIndex}|${songId}`]
+    };
+
+    if (typeof sentMessage === 'function') {
+        sentMessage(payload);
+        console.log('Sent DELQ via MQTT:', payload);
+    } else {
+        console.warn('sentMessage() not available to send DELQ payload', payload);
+    }
+}
+
+// ฟังก์ชันลบรายการจาก DOM พร้อมอนิเมชัน (หลังจากส่งคำสั่ง)
+function removeQueueItemElement(el) {
+    if (!el) return;
+    // เล่นอนิเมชันเลื่อนออกไปทางขวา แล้วลบ
+    el.style.transition = 'transform 220ms ease-out, opacity 200ms ease-out';
+    el.style.transform = 'translateX(120%)';
+    el.style.opacity = '0';
+    setTimeout(() => {
+        if (el.parentNode) el.parentNode.removeChild(el);
+    }, 240);
+}
+
+// ผูก event pointer (หรือ touch) ให้แต่ละรายการคิว
+function attachSwipeHandlersForQueueItems() {
+    const queueContainer = document.getElementById('queueItemsContainer');
+    if (!queueContainer) return;
+
+    // ตั้งค่า threshold px ที่ต้องปัดเกินจึงถือว่าเป็นการลบ
+    const SWIPE_THRESHOLD = 80;
+
+    // ผูกให้แต่ละ direct child ของ queueContainer
+    const children = Array.from(queueContainer.children);
+    children.forEach(itemEl => {
+        // ถ้ามีแล้วอย่าใส่ซ้ำ
+        if (itemEl.__swipeBound) return;
+        itemEl.__swipeBound = true;
+
+        let startX = 0;
+        let currentX = 0;
+        let dragging = false;
+
+        // pointer events (works for mouse + touch)
+        itemEl.addEventListener('pointerdown', (ev) => {
+            // only left button or touch
+            if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+            dragging = true;
+            startX = ev.clientX;
+            currentX = startX;
+            itemEl.style.transition = ''; // cancel transition while dragging
+            itemEl.setPointerCapture && itemEl.setPointerCapture(ev.pointerId);
+        });
+
+        itemEl.addEventListener('pointermove', (ev) => {
+            if (!dragging) return;
+            currentX = ev.clientX;
+            const dx = currentX - startX;
+            if (dx > 0) { // sliding to right only
+                // apply translate but cap (for nicer UX)
+                const translate = Math.min(dx, 160);
+                itemEl.style.transform = `translateX(${translate}px)`;
+                itemEl.style.boxShadow = '0 8px 20px rgba(0,0,0,0.12)';
+            } else {
+                // don't allow left drag (or very small)
+                itemEl.style.transform = 'translateX(0px)';
+            }
+        });
+
+        function endDrag(ev) {
+            if (!dragging) return;
+            dragging = false;
+            const dx = (ev && ev.clientX ? ev.clientX : currentX) - startX;
+            // ถ้าเกิน threshold => consider delete
+            if (dx >= SWIPE_THRESHOLD) {
+                // อ่าน data attributes ที่เราต้องการ
+                const playlistIndexAttr = itemEl.getAttribute('data-playlist-index');
+                const songIdAttr = itemEl.getAttribute('data-song-id');
+
+                const playlistIndex = playlistIndexAttr !== null ? Number(playlistIndexAttr) : undefined;
+                const songId = songIdAttr !== null ? songIdAttr : undefined;
+
+                // ส่งคำสั่ง MQTT และลบ element หลังอนิเมชัน
+                sendDeleteQueueMqtt(playlistIndex, songId);
+                removeQueueItemElement(itemEl);
+            } else {
+                // กลับตำแหน่งเดิม
+                itemEl.style.transition = 'transform 180ms cubic-bezier(.2,.8,.2,1)';
+                itemEl.style.transform = 'translateX(0)';
+                setTimeout(() => {
+                    itemEl.style.boxShadow = '';
+                }, 200);
+            }
+
+            // release capture if any
+            try { itemEl.releasePointerCapture && itemEl.releasePointerCapture(ev.pointerId); } catch (e) {/*ignore*/ }
+        }
+
+        itemEl.addEventListener('pointerup', endDrag);
+        itemEl.addEventListener('pointercancel', endDrag);
+        // fallback: mouseleave can end drag
+        itemEl.addEventListener('mouseleave', (ev) => {
+            if (dragging) endDrag(ev);
+        });
+
+        // Prevent text selection while dragging
+        itemEl.addEventListener('dragstart', (e) => e.preventDefault());
+    });
+}
+
+// ============================
+// ปรับ renderQueueUI ให้ใส่ data-playlist-index และ data-song-id ในแต่ละ item
+// ============================
+// ในฟังก์ชัน renderQueueUI(data) แทนที่ส่วนที่สร้าง queueHTML ด้วยโค้ดด้านล่าง
+// (ค้นหาโค้ดที่สร้าง queueHTML = nextQueue.map(...).join('') แล้วแทนที่)

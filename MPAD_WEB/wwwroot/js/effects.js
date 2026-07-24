@@ -12,27 +12,31 @@
         if (lastTriggered[effectId] && (now - lastTriggered[effectId] < EFFECT_COOLDOWN_MS)) return;
         lastTriggered[effectId] = now;
 
+        var soundsurl = window.soundUrl;
+        const map = {
+            applause: soundsurl + 'applause.mp3',
+            cheer: soundsurl + 'cheer.mp3',
+            laugh: soundsurl + 'laugh.mp3',
+            air_horn: soundsurl + 'air_horn.mp3',
+            boo: soundsurl + 'boo.mp3',
+            magic: soundsurl + 'magic.mp3',
+            drumroll: soundsurl + 'drumroll.mp3',
+            mystery: soundsurl + 'mystery.mp3',
+            stop_all: soundsurl + 'stop_all.mp3'
+        };
+
         // 1) ส่ง MQTT payload
         if (typeof sentMessage === 'function') {
-            sentMessage({ effect: effectId });
+            sentMessage({ soundEffectControl: effectId });
             console.debug('effects.js sent effect:', effectId);
         } else {
             console.warn('effects.js: sentMessage() not available');
         }
 
+        
         // 2) เล่น local sound fallback (if exists)
         try {
-            const map = {
-                applause: '/sounds/applause.mp3',
-                cheer: '/sounds/cheer.mp3',
-                laugh: '/sounds/laugh.mp3',
-                air_horn: '/sounds/air_horn.mp3',
-                boo: '/sounds/boo.mp3',
-                magic: '/sounds/magic.mp3',
-                drumroll: '/sounds/drumroll.mp3',
-                mystery: '/sounds/mystery.mp3',
-                stop_all: '/sounds/stop_all.mp3'
-            };
+            
             const src = map[effectId];
             if (src) {
                 const a = new Audio(src);

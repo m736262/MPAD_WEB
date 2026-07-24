@@ -385,90 +385,147 @@
 
         <!-- ====== Effects View (เพิ่มไว้ข้างๆ homeView / searchView / queueView / playingView) ====== -->
         <!-- ===== Effects View (แทนที่ของเดิม) ===== -->
-        <div id="effectsView" class="hidden space-y-6 pb-36">
-            <!-- Header -->
-            <div class="mb-6 text-center">
-                <h2 class="font-headline text-3xl font-extrabold tracking-tighter mb-1">Sound Board</h2>
+        <div id="effectsView" class="space-y-8 pb-36 max-w-lg mx-auto px-6">
+            <!-- Header Title Section -->
+            <div class="mb-10 text-center">
+                <h2 class="font-headline text-4xl font-extrabold tracking-tighter mb-2">Sound Board</h2>
                 <p class="font-label text-xs uppercase tracking-[0.2em] text-outline">Instant Crowd Reactions</p>
             </div>
 
             <!-- Effects Grid 3x3 -->
-            <section class="grid grid-cols-3 gap-4 mb-6 px-1" aria-label="Sound effects">
-                <!-- button template: data-effect attribute จะถูกอ่านโดย effects.js -->
+            <section class="grid grid-cols-3 gap-4 mb-12" aria-label="Sound effects">
+                <!-- Applause - Pink/Tertiary -->
                 <button class="effect-btn flex flex-col items-center justify-center aspect-square rounded-xl bg-surface-container-high border-2 border-tertiary/20 active:scale-90 transition-all duration-200 group"
                         data-effect="applause" aria-label="Applause">
                     <div class="w-12 h-12 flex items-center justify-center rounded-full bg-tertiary/10 group-active:bg-tertiary mb-3 transition-colors">
-                        <span class="material-symbols-outlined text-tertiary text-3xl" style="font-variation-settings: 'FILL' 1;">social_leaderboard</span>
+                        <span class="material-symbols-outlined text-tertiary group-active:text-on-tertiary text-3xl" style="font-variation-settings: 'FILL' 1;">social_leaderboard</span>
                     </div>
                     <span class="font-label text-[10px] font-bold uppercase tracking-widest text-on-surface">Applause</span>
                 </button>
 
-                <button class="effect-btn flex flex-col items-center justify-center aspect-square rounded-xl bg-surface-container-high border-2 border-secondary/20 group"
+                <!-- Cheer - Purple/Secondary -->
+                <button class="effect-btn flex flex-col items-center justify-center aspect-square rounded-xl bg-surface-container-high border-2 border-secondary/20 active:scale-90 transition-all duration-200 group"
                         data-effect="cheer" aria-label="Cheer">
-                    <div class="w-12 h-12 flex items-center justify-center rounded-full bg-secondary/10 mb-3">
-                        <span class="material-symbols-outlined text-secondary text-3xl" style="font-variation-settings: 'FILL' 1;">celebration</span>
+                    <div class="w-12 h-12 flex items-center justify-center rounded-full bg-secondary/10 group-active:bg-secondary mb-3 transition-colors">
+                        <span class="material-symbols-outlined text-secondary group-active:text-on-secondary text-3xl" style="font-variation-settings: 'FILL' 1;">celebration</span>
                     </div>
                     <span class="font-label text-[10px] font-bold uppercase tracking-widest text-on-surface">Cheer</span>
                 </button>
 
-                <button class="effect-btn flex flex-col items-center justify-center aspect-square rounded-xl bg-surface-container-high border-2 border-primary/20 group"
+                <!-- Laugh - Cyan/Primary -->
+                <button class="effect-btn flex flex-col items-center justify-center aspect-square rounded-xl bg-surface-container-high border-2 border-primary/20 active:scale-90 transition-all duration-200 group"
                         data-effect="laugh" aria-label="Laugh">
-                    <div class="w-12 h-12 flex items-center justify-center rounded-full bg-primary/10 mb-3">
-                        <span class="material-symbols-outlined text-primary text-3xl" style="font-variation-settings: 'FILL' 1;">mood</span>
+                    <div class="w-12 h-12 flex items-center justify-center rounded-full bg-primary/10 group-active:bg-primary mb-3 transition-colors">
+                        <span class="material-symbols-outlined text-primary group-active:text-on-primary-container text-3xl" style="font-variation-settings: 'FILL' 1;">mood</span>
                     </div>
                     <span class="font-label text-[10px] font-bold uppercase tracking-widest text-on-surface">Laugh</span>
                 </button>
 
-                <button class="effect-btn flex flex-col items-center justify-center aspect-square rounded-xl bg-surface-container-high border-2 group"
+                <!-- Air Horn - Yellow/Warning Style -->
+                <button class="effect-btn flex flex-col items-center justify-center aspect-square rounded-xl bg-surface-container-high border-2 border-[#FFD700]/20 active:scale-90 transition-all duration-200 group"
                         data-effect="air_horn" aria-label="Air Horn">
-                    <div class="w-12 h-12 flex items-center justify-center rounded-full bg-[#FFD700]/10 mb-3">
-                        <span class="material-symbols-outlined text-[#FFD700] text-3xl" style="font-variation-settings: 'FILL' 1;">campaign</span>
+                    <div class="w-12 h-12 flex items-center justify-center rounded-full bg-[#FFD700]/10 group-active:bg-[#FFD700] mb-3 transition-colors">
+                        <span class="material-symbols-outlined text-[#FFD700] group-active:text-background text-3xl" style="font-variation-settings: 'FILL' 1;">campaign</span>
                     </div>
                     <span class="font-label text-[10px] font-bold uppercase tracking-widest text-on-surface">Air Horn</span>
                 </button>
 
-                <button class="effect-btn flex flex-col items-center justify-center aspect-square rounded-xl bg-surface-container-high border-2 group"
+                <!-- Boo - Red/Error -->
+                <button class="effect-btn flex flex-col items-center justify-center aspect-square rounded-xl bg-surface-container-high border-2 border-error/20 active:scale-90 transition-all duration-200 group"
                         data-effect="boo" aria-label="Boo">
-                    <div class="w-12 h-12 flex items-center justify-center rounded-full bg-error/10 mb-3">
-                        <span class="material-symbols-outlined text-error text-3xl" style="font-variation-settings: 'FILL' 1;">thumb_down</span>
+                    <div class="w-12 h-12 flex items-center justify-center rounded-full bg-error/10 group-active:bg-error mb-3 transition-colors">
+                        <span class="material-symbols-outlined text-error group-active:text-on-error text-3xl" style="font-variation-settings: 'FILL' 1;">thumb_down</span>
                     </div>
                     <span class="font-label text-[10px] font-bold uppercase tracking-widest text-on-surface">Boo</span>
                 </button>
 
-                <button class="effect-btn flex flex-col items-center justify-center aspect-square rounded-xl bg-surface-container-high border-2 group"
+                <!-- Magic - Green/Custom -->
+                <button class="effect-btn flex flex-col items-center justify-center aspect-square rounded-xl bg-surface-container-high border-2 border-[#00FF85]/20 active:scale-90 transition-all duration-200 group"
                         data-effect="magic" aria-label="Magic">
-                    <div class="w-12 h-12 flex items-center justify-center rounded-full bg-[#00FF85]/10 mb-3">
-                        <span class="material-symbols-outlined text-[#00FF85] text-3xl" style="font-variation-settings: 'FILL' 1;">auto_fix_high</span>
+                    <div class="w-12 h-12 flex items-center justify-center rounded-full bg-[#00FF85]/10 group-active:bg-[#00FF85] mb-3 transition-colors">
+                        <span class="material-symbols-outlined text-[#00FF85] group-active:text-background text-3xl" style="font-variation-settings: 'FILL' 1;">auto_fix_high</span>
                     </div>
                     <span class="font-label text-[10px] font-bold uppercase tracking-widest text-on-surface">Magic</span>
                 </button>
 
-                <button class="effect-btn flex flex-col items-center justify-center aspect-square rounded-xl bg-surface-container-high border-2 group"
+                <!-- Drumroll -->
+                <button class="effect-btn flex flex-col items-center justify-center aspect-square rounded-xl bg-surface-container-high border-2 border-outline-variant active:scale-90 transition-all duration-200 group"
                         data-effect="drumroll" aria-label="Drumroll">
-                    <div class="w-12 h-12 flex items-center justify-center rounded-full bg-surface-variant mb-3">
-                        <span class="material-symbols-outlined text-on-surface-variant text-3xl" style="font-variation-settings: 'FILL' 1;">music_note</span>
+                    <div class="w-12 h-12 flex items-center justify-center rounded-full bg-surface-variant group-active:bg-outline mb-3 transition-colors">
+                        <span class="material-symbols-outlined text-on-surface-variant group-active:text-background text-3xl" style="font-variation-settings: 'FILL' 1;">potted_plant</span>
                     </div>
                     <span class="font-label text-[10px] font-bold uppercase tracking-widest text-on-surface">Drumroll</span>
                 </button>
 
-                <button class="effect-btn flex flex-col items-center justify-center aspect-square rounded-xl bg-surface-container-high border-2 group"
+                <!-- Mystery -->
+                <button class="effect-btn flex flex-col items-center justify-center aspect-square rounded-xl bg-surface-container-high border-2 border-outline-variant active:scale-90 transition-all duration-200 group"
                         data-effect="mystery" aria-label="Mystery">
-                    <div class="w-12 h-12 flex items-center justify-center rounded-full bg-surface-variant mb-3">
-                        <span class="material-symbols-outlined text-on-surface-variant text-3xl" style="font-variation-settings: 'FILL' 1;">help</span>
+                    <div class="w-12 h-12 flex items-center justify-center rounded-full bg-surface-variant group-active:bg-outline mb-3 transition-colors">
+                        <span class="material-symbols-outlined text-on-surface-variant group-active:text-background text-3xl" style="font-variation-settings: 'FILL' 1;">help</span>
                     </div>
                     <span class="font-label text-[10px] font-bold uppercase tracking-widest text-on-surface">Mystery</span>
                 </button>
 
-                <button class="effect-btn flex flex-col items-center justify-center aspect-square rounded-xl bg-surface-container border-2 group"
+                <!-- Stop All -->
+                <button class="effect-btn flex flex-col items-center justify-center aspect-square rounded-xl bg-surface-container border-2 border-outline-variant/50 active:scale-90 transition-all duration-200 group"
                         data-effect="stop_all" aria-label="Stop All">
                     <div class="w-12 h-12 flex items-center justify-center rounded-full bg-surface-variant mb-3">
-                        <span class="material-symbols-outlined text-outline text-3xl" style="font-variation-settings: 'FILL' 1;">stop_circle</span>
+                        <span class="material-symbols-outlined text-outline text-3xl">stop_circle</span>
                     </div>
                     <span class="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Stop All</span>
                 </button>
             </section>
 
-            <!-- (Option) สามารถใส่ส่วน Background Chill กลับมาเป็นแยก view ได้ ถ้าต้องการ -->
+            <!-- Background Chill Section -->
+            <section class="mb-8">
+                <div class="flex items-center justify-between mb-4 px-2">
+                    <h3 class="font-headline text-lg font-bold">Background Chill</h3>
+                    <span class="font-label text-[10px] font-bold text-primary uppercase tracking-widest">Atmosphere</span>
+                </div>
+                <div class="space-y-3">
+                    <!-- Chill Card 1 -->
+                    <div class="flex items-center gap-4 p-4 bg-surface-container rounded-lg border-l-4 border-secondary/40">
+                        <div class="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+                            <img class="w-full h-full object-cover" alt="vibrant neon blue and purple light beams" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvZaS4Cuz_5miTUdqOc5FTXNch3DUUyRFV9A8atpUVeNhGBN6TkY-p3cn9N25c6wOEJSUm3cTKtsAbW7j-tlKDCCAWH3xfpUmtZNgi-Cei4J29edy0MDNYvDsfohXLgNw1oOCU8HxpG8wAS8unIC31Hm1Uv_al1_vUSSGlA3YsX7aVdhRUPwfrMJF_a2PV6lX2PO4kQG89hBL8-1WfxRzTe7yTUBqN8_f4Og9QANBmrdICeTAbt80j-5r6HvzOKGsrwEp1zY_VHJge" />
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-headline text-sm font-bold">Lounge Jazz</h4>
+                            <p class="font-label text-xs text-outline">Soft percussion • Saxophone</p>
+                        </div>
+                        <button class="w-10 h-10 flex items-center justify-center rounded-full bg-secondary-container text-on-secondary-container active:scale-90 transition-transform">
+                            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+                        </button>
+                    </div>
+
+                    <!-- Chill Card 2 -->
+                    <div class="flex items-center gap-4 p-4 bg-surface-container rounded-lg border-l-4 border-primary/40">
+                        <div class="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+                            <img class="w-full h-full object-cover" alt="minimalist aesthetic background with wavy neon cyan lines" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1NzrkSJtYzaAcx6zYEyMnUtX6nRkANY9bKKY0kboRCWlyXQYjQROhWM-YiOkSka2wmAEB44qc_m0EgHbtrHgAhBn9Ongd7VreZF26MA1bxOhLbPJs20YPWQpPzCbk0Oc6-ahLVv7_IM31PNxIxouvxC3PS5yOhRPeCCd-pWhNpEJLjESot8j3a5GTsQuLdd9V4sKmN-vEmhKEfGSekSqLkpC5ywzOl0HYa09mFD_Dljrt2yAbY_HazF9Vcg8QMwaFhkUC7c6fwchK" />
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-headline text-sm font-bold">Deep Bass Ambient</h4>
+                            <p class="font-label text-xs text-outline">Synthetic pads • Chillout</p>
+                        </div>
+                        <button class="w-10 h-10 flex items-center justify-center rounded-full bg-primary-container text-on-primary-container active:scale-90 transition-transform">
+                            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+                        </button>
+                    </div>
+
+                    <!-- Chill Card 3 -->
+                    <div class="flex items-center gap-4 p-4 bg-surface-container rounded-lg border-l-4 border-tertiary/40">
+                        <div class="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+                            <img class="w-full h-full object-cover" alt="abstract tech aesthetic with glowing magenta and pink circuit patterns" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBgXHDui_tCspYSdkAYoR13cSST30f5zyTCwZiRqVFW_y-a1BwDDkg1p_pXv4zaRedTTYia8WjLdacrNg8hR7RzFo8C0jUKDYQm0EdTl-iMllYLevwXl39eZypjE_3Xk8N2FsreD0tJ6BQ55_9oS7PCtBuhbngOioJvadSNsip2tJN3cLDq8VVC3iHALQDltyKPNp7js8o7A8ghtCdNKSXeb5_jr9OxqG58J0vwBczD6-vKFO38Bxn-gwtZE8g4vuzi5mkyEmZAQo7U" />
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-headline text-sm font-bold">Rainy Windows</h4>
+                            <p class="font-label text-xs text-outline">Lo-fi beats • Rain fx</p>
+                        </div>
+                        <button class="w-10 h-10 flex items-center justify-center rounded-full bg-tertiary-container text-on-tertiary-container active:scale-90 transition-transform">
+                            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
         </div>
 
     </main>

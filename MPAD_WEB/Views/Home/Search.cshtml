@@ -1,0 +1,278 @@
+﻿@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
+
+@{
+    ViewData["Title"] = "Search";
+
+    var loginApiUrl = Configuration["ApiSettings:LoginApiUrl"];
+    var appKey = Configuration["ApiSettings:appKey"];
+}
+
+<!DOCTYPE html>
+
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>MBOX Karaoke - Search</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "on-tertiary-fixed": "#360021",
+                "surface-tint": "#81ecff",
+                "surface-bright": "#2c2b32",
+                "error-container": "#9f0519",
+                "inverse-on-surface": "#55545a",
+                "surface-dim": "#0e0e12",
+                "on-tertiary-container": "#4a002f",
+                "secondary-container": "#5516be",
+                "on-surface-variant": "#acaab0",
+                "outline-variant": "#48474c",
+                "on-error": "#490006",
+                "on-tertiary-fixed-variant": "#73004b",
+                "on-secondary": "#280067",
+                "background": "#0e0e12",
+                "tertiary-fixed": "#ff8bc5",
+                "error": "#ff716c",
+                "inverse-surface": "#fcf8fe",
+                "on-tertiary": "#5f003e",
+                "error-dim": "#d7383b",
+                "primary": "#81ecff",
+                "on-primary-container": "#004d57",
+                "surface-container-low": "#131318",
+                "secondary": "#ac8aff",
+                "on-error-container": "#ffa8a3",
+                "tertiary": "#ff86c3",
+                "secondary-fixed": "#dac9ff",
+                "surface-variant": "#25252b",
+                "inverse-primary": "#006976",
+                "on-secondary-container": "#d9c8ff",
+                "on-secondary-fixed": "#40009b",
+                "surface-container-highest": "#25252b",
+                "outline": "#76757a",
+                "on-primary": "#005762",
+                "secondary-fixed-dim": "#ceb9ff",
+                "on-primary-fixed": "#003840",
+                "on-primary-fixed-variant": "#005762",
+                "on-background": "#f3eff6",
+                "surface-container-high": "#1f1f25",
+                "primary-fixed-dim": "#00d4ec",
+                "on-surface": "#f3eff6",
+                "tertiary-container": "#f673b7",
+                "primary-container": "#00e3fd",
+                "primary-fixed": "#00e3fd",
+                "primary-dim": "#00d4ec",
+                "tertiary-dim": "#f271b5",
+                "surface-container-lowest": "#000000",
+                "surface-container": "#19191e",
+                "tertiary-fixed-dim": "#f976ba",
+                "on-secondary-fixed-variant": "#5f28c8",
+                "secondary-dim": "#8455ef",
+                "surface": "#0e0e12"
+              },
+              fontFamily: {
+                "headline": ["Plus Jakarta Sans"],
+                "body": ["Inter"],
+                "label": ["Inter"]
+              },
+              borderRadius: {
+                "DEFAULT": "0.5rem",
+                "lg": "1rem",
+                "xl": "1.5rem",
+                "2xl": "2rem",
+                "full": "9999px"
+              },
+            },
+          },
+        }
+    </script>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body min-h-screen pb-48">
+    <!-- Top Navigation Bar -->
+    <nav class="fixed top-0 w-full z-50 bg-[#0e0e12]/80 backdrop-blur-xl flex justify-between items-center px-6 h-16 shadow-[0_2px_20px_rgba(0,229,255,0.1)] bg-gradient-to-b from-[#19191e] to-transparent">
+        <div class="flex items-center gap-2 text-[#00e5ff]">
+            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">sensors</span>
+            <span class="font-['Plus_Jakarta_Sans'] tracking-tight font-bold text-sm">Lounge 04 • Connected</span>
+        </div>
+        <div class="text-slate-400 hover:opacity-80 transition-opacity active:scale-95 duration-200">
+            <span class="material-symbols-outlined">timer</span>
+        </div>
+    </nav>
+
+    <main class="pt-24 px-6 max-w-2xl mx-auto">
+        <!-- Search Input Section -->
+        <section class="mb-8">
+            <div class="relative group">
+                <div class="absolute inset-y-0 left-5 flex items-center pointer-events-none text-primary">
+                    <span class="material-symbols-outlined text-3xl">search</span>
+                </div>
+                <input id="activeSearchInput"
+                       style="view-transition-name: search-bar-element;"
+                       class="w-full bg-surface-container h-16 pl-16 pr-16 rounded-2xl border-none text-lg font-medium focus:ring-2 focus:ring-primary placeholder:text-outline/50 transition-all duration-300 shadow-lg"
+                       placeholder="Search songs by title or artist"
+                       type="text"
+                       value="Bruno Mars"
+                       autofocus />
+                <button type="button"
+                        onclick="document.getElementById('activeSearchInput').value=''; document.getElementById('activeSearchInput').focus();"
+                        class="absolute inset-y-0 right-5 flex items-center text-outline hover:text-on-surface transition-colors active:scale-90">
+                    <span class="material-symbols-outlined text-2xl">close</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Filter Chips (Scrollable) -->
+        <section class="mb-10 overflow-x-auto hide-scrollbar flex gap-3 -mx-6 px-6">
+            <button class="bg-secondary text-on-secondary px-6 py-2.5 rounded-full whitespace-nowrap font-bold tracking-wide text-sm active:scale-95 transition-transform">
+                Thai
+            </button>
+            <button class="bg-surface-container-highest text-on-surface px-6 py-2.5 rounded-full whitespace-nowrap font-bold tracking-wide text-sm hover:bg-surface-variant transition-colors active:scale-95">
+                English
+            </button>
+            <button class="bg-surface-container-highest text-on-surface px-6 py-2.5 rounded-full whitespace-nowrap font-bold tracking-wide text-sm hover:bg-surface-variant transition-colors active:scale-95">
+                Japanese
+            </button>
+            <button class="bg-surface-container-highest text-on-surface px-6 py-2.5 rounded-full whitespace-nowrap font-bold tracking-wide text-sm hover:bg-surface-variant transition-colors active:scale-95">
+                Korean
+            </button>
+            <button class="bg-surface-container-highest text-on-surface px-6 py-2.5 rounded-full whitespace-nowrap font-bold tracking-wide text-sm hover:bg-surface-variant transition-colors active:scale-95">
+                ลูกทุ่ง
+            </button>
+        </section>
+
+        <!-- Recent Searches Section -->
+        <section class="mb-10">
+            <h3 class="text-xs uppercase tracking-[0.2em] font-black text-outline-variant mb-4">Recent Searches</h3>
+            <div class="flex flex-wrap gap-3">
+                <div class="flex items-center gap-2 bg-surface-container-low px-4 py-2 rounded-xl text-on-surface-variant text-sm border border-outline-variant/10">
+                    <span>Bruno Mars</span>
+                    <span class="material-symbols-outlined text-xs">history</span>
+                </div>
+                <div class="flex items-center gap-2 bg-surface-container-low px-4 py-2 rounded-xl text-on-surface-variant text-sm border border-outline-variant/10">
+                    <span>Billie Eilish</span>
+                    <span class="material-symbols-outlined text-xs">history</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Results Header -->
+        <div class="flex justify-between items-end mb-6">
+            <h2 class="font-headline text-2xl font-extrabold tracking-tight">Search Results</h2>
+            <span class="text-xs font-bold text-primary tracking-widest uppercase">12 Matches</span>
+        </div>
+
+        <!-- Vertical List Results -->
+        <div class="space-y-4">
+            <!-- Result 1 -->
+            <div class="group bg-surface-container flex items-center p-4 rounded-2xl transition-all duration-300 hover:bg-surface-container-high hover:-translate-y-0.5">
+                <div class="relative h-16 w-16 rounded-xl overflow-hidden flex-shrink-0 mr-4 shadow-md">
+                    <img alt="" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCtZoFltvnkOAYTgtHNCQgA3lwwH11hS-h2oMvDVJw_NHTPPgRHLS_3y7oG6_F2XWXwH2costSkzx1sF8D6CBxfF4q-W1k2OKdtkgxRVCsr9Qn0Oksuq5wxUjnPVVodXt7euhOMVrYRMDpANKMfYLSNo-dDcQExz8XBHKNIzxTj7WiyKsauBfNIw870ksLMD75tMvRK3tX7I17h7LNZEhQcc0RoBfC4yFtCGtGw3lFWMHgShWJMT7lo1IvoHkEKXZi9Rmoq_P_qovDs" />
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                </div>
+                <div class="flex-grow min-w-0">
+                    <h4 class="font-headline font-bold text-base text-on-surface truncate leading-tight">Die With A Smile</h4>
+                    <p class="text-on-surface-variant text-sm truncate">Bruno Mars &amp; Lady Gaga</p>
+                    <div class="inline-flex items-center px-1.5 py-0.5 mt-1 bg-surface-variant rounded text-[10px] font-bold text-primary tracking-tighter border border-primary/20 uppercase">
+                        EN
+                    </div>
+                </div>
+                <button class="h-12 w-12 flex items-center justify-center rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary hover:text-on-primary-container transition-all active:scale-90 shrink-0 shadow-[0_0_15px_rgba(0,229,255,0.2)]">
+                    <span class="material-symbols-outlined text-2xl font-bold">add</span>
+                </button>
+            </div>
+
+            <!-- Result 2 -->
+            <div class="group bg-surface-container flex items-center p-4 rounded-2xl transition-all duration-300 hover:bg-surface-container-high hover:-translate-y-0.5">
+                <div class="relative h-16 w-16 rounded-xl overflow-hidden flex-shrink-0 mr-4 shadow-md">
+                    <img alt="" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBmNqfA9Ed2azSYzEEn6KKoRSjSSHhMnYDRSYJgipZrEkqg5zMEQeTfjwfQMwREpaufkcjaUVZk_TitWzlZUEnT57n3waV7hDqCxud8-B4X-ue_4H3vO0AdUrRKM0u3-tICvDTmnSGRjSDQwcCOxe7fh1IhFDujZ9oZe2SPAi-Q7CpqeAvAfCO5pu8lBZ2h9FAzYCTPJSBE7OPlAUikni5eq0ynHNY0L29dfvz0rRtuKaAieLxPuWS9aQGqBTHuHkUIcj24VQ4F4QBx" />
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                </div>
+                <div class="flex-grow min-w-0">
+                    <h4 class="font-headline font-bold text-base text-on-surface truncate leading-tight">Flowers</h4>
+                    <p class="text-on-surface-variant text-sm truncate">Miley Cyrus</p>
+                    <div class="inline-flex items-center px-1.5 py-0.5 mt-1 bg-surface-variant rounded text-[10px] font-bold text-primary tracking-tighter border border-primary/20 uppercase">
+                        EN
+                    </div>
+                </div>
+                <button class="h-12 w-12 flex items-center justify-center rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary hover:text-on-primary-container transition-all active:scale-90 shrink-0 shadow-[0_0_15px_rgba(0,229,255,0.2)]">
+                    <span class="material-symbols-outlined text-2xl font-bold">add</span>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Persistent Mini Player -->
+    <div class="fixed bottom-24 left-4 right-4 z-40 max-w-2xl mx-auto">
+        <div class="bg-surface-container-high/90 backdrop-blur-2xl rounded-2xl p-4 shadow-2xl flex items-center gap-4 border border-outline-variant/10">
+            <div class="relative h-12 w-12 rounded-xl overflow-hidden flex-shrink-0 animate-pulse">
+                <img alt="" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDkADiyQrTrrTwGcOeveZRcEJjJJJP-XGChj1RuW66YweA75i4sAac5lLgSjMMcyTeUaqcAuadbQq77ENlwO88PU-jv9qcxR05sZph7iPHAlzOVPuyC_IWkXD1rgqOrDfTXoq691sn51daAFpOiq7v6lgUoaNz9NWcLlBqphRJ3rLG2A478vSmYzYz6mX5Po86WDAFbb6Gpw7FZRtI4IDIuk_UC3wScKjn95xj9fI8gGc2ZwTBvvwwchLo9jB6K2zHphgNBzQMG-LON" />
+            </div>
+            <div class="flex-grow min-w-0">
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Now Sing</span>
+                    <div class="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_#81ecff]"></div>
+                </div>
+                <h5 class="text-sm font-bold text-on-surface truncate">Versace on the Floor</h5>
+                <div class="w-full h-1 bg-surface-variant rounded-full mt-2 overflow-hidden">
+                    <div class="w-2/3 h-full bg-primary shadow-[0_0_10px_#81ecff]"></div>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button class="h-10 w-10 flex items-center justify-center text-on-surface hover:text-primary transition-colors">
+                    <span class="material-symbols-outlined text-3xl">pause</span>
+                </button>
+                <button class="h-10 w-10 flex items-center justify-center text-on-surface hover:text-primary transition-colors">
+                    <span class="material-symbols-outlined text-3xl">skip_next</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="fixed bottom-0 w-full rounded-t-3xl z-50 bg-[#19191e]/90 backdrop-blur-2xl flex justify-around items-center h-20 pb-2 px-2 border-t border-[#48474c]/15 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+        <div class="flex flex-col items-center justify-center text-slate-500 hover:text-[#81ecff] transition-colors active:scale-90 duration-300 ease-out cursor-pointer">
+            <span class="material-symbols-outlined">home</span>
+            <span class="font-['Plus_Jakarta_Sans'] text-[10px] font-bold uppercase tracking-widest mt-1">Home</span>
+        </div>
+        <div class="flex flex-col items-center justify-center text-[#00e5ff] drop-shadow-[0_0_8px_rgba(0,229,255,0.6)] active:scale-90 duration-300 ease-out cursor-pointer">
+            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">search</span>
+            <span class="font-['Plus_Jakarta_Sans'] text-[10px] font-bold uppercase tracking-widest mt-1">Search</span>
+        </div>
+        <div class="flex flex-col items-center justify-center text-slate-500 hover:text-[#81ecff] transition-colors active:scale-90 duration-300 ease-out cursor-pointer">
+            <span class="material-symbols-outlined">queue_music</span>
+            <span class="font-['Plus_Jakarta_Sans'] text-[10px] font-bold uppercase tracking-widest mt-1">Queue</span>
+        </div>
+        <div class="flex flex-col items-center justify-center text-slate-500 hover:text-[#81ecff] transition-colors active:scale-90 duration-300 ease-out cursor-pointer">
+            <span class="material-symbols-outlined">music_note</span>
+            <span class="font-['Plus_Jakarta_Sans'] text-[10px] font-bold uppercase tracking-widest mt-1">Playing</span>
+        </div>
+        <div class="flex flex-col items-center justify-center text-slate-500 hover:text-[#81ecff] transition-colors active:scale-90 duration-300 ease-out cursor-pointer">
+            <span class="material-symbols-outlined">tune</span>
+            <span class="font-['Plus_Jakarta_Sans'] text-[10px] font-bold uppercase tracking-widest mt-1">Effects</span>
+        </div>
+    </nav>
+</body>
+</html>

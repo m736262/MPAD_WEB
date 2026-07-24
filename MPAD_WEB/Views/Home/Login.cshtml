@@ -1,0 +1,473 @@
+﻿@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
+
+@{
+    ViewData["Title"] = "Log in";
+
+    var loginApiUrl = Configuration["ApiSettings:LoginApiUrl"];
+    var appKey = Configuration["ApiSettings:appKey"];
+}
+
+<!DOCTYPE html>
+<html class="dark" lang="th">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport" />
+    <title>MBOX Karaoke Remote</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;400;600;700;800&family=Inter:wght@300;400;500;600&family=Kanit:wght@300;400;600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#81ecff",
+                        "on-primary": "#005762",
+                        "primary-container": "#00e3fd",
+                        "on-primary-container": "#004d57",
+                        "secondary": "#ac8aff",
+                        "on-background": "#f3eff6",
+                        "surface-container-highest": "#25252b",
+                        "on-surface-variant": "#acaab0",
+                    },
+                    fontFamily: {
+                        "headline": ["Plus Jakarta Sans", "Kanit"],
+                        "body": ["Inter", "Kanit"],
+                        "label": ["Inter", "Kanit"]
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        /* Neon logo pulsing animation */
+        @@keyframes neon-pulse {
+            0%, 100% {
+                filter: drop-shadow(0 0 10px rgba(129, 236, 255, 0.4));
+                opacity: 1;
+            }
+
+            50% {
+                filter: drop-shadow(0 0 25px rgba(129, 236, 255, 0.8));
+                opacity: 0.9;
+            }
+        }
+
+        .animate-neon-pulse {
+            animation: neon-pulse 2s ease-in-out infinite;
+        }
+
+        /* Progress loading bar animation */
+        @@keyframes progress-loading {
+            0% {
+                width: 0%;
+            }
+
+            50% {
+                width: 70%;
+            }
+
+            100% {
+                width: 100%;
+            }
+        }
+
+        .loading-bar-fill {
+            animation: progress-loading 3s ease-in-out infinite;
+        }
+
+        /* เอา tap highlight สีฟ้าบนมือถือออก */
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+        }
+
+        /* ตกแต่งวงกลมสีอวาตาร์เมื่อ Active */
+        .avatar-circle.active {
+            opacity: 1 !important;
+            border-color: #1e62f6 !important;
+            box-shadow: 0 0 14px rgba(106, 70, 250, 0.8);
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body class="bg-[#05070b] text-on-background font-body overflow-x-hidden selection:bg-primary selection:text-on-primary-container">
+
+    <!-- 🌌 พื้นหลัง Glow gradient คงเดิม ใช้ร่วมกันทั้ง 2 หน้าจอเพื่อความต่อเนื่อง -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px]"></div>
+        <div class="absolute -bottom-40 -right-40 w-[400px] h-[400px] bg-secondary/10 rounded-full blur-[100px]"></div>
+        <div class="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-[#15112c]/30 to-transparent"></div>
+    </div>
+
+    <!-- 🎞️ Visual Polish: Grain Overlay -->
+    <div class="fixed inset-0 pointer-events-none opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')] z-50"></div>
+
+    <!-- ==================================================== -->
+    <!-- 🖥️ หน้าจอที่ 1: CONNECTING SCREEN (หน้าโหลดแรกเริ่ม) -->
+    <!-- ===================================================== -->
+    <main id="loadingScreen" class="relative z-10 h-screen w-full flex flex-col items-center justify-center px-6">
+        <!-- Header status bar ของหน้าโหลด -->
+        <header class="absolute top-0 w-full flex justify-between items-center px-6 h-16 bg-gradient-to-b from-[#08080c] to-transparent pointer-events-none">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-sm">sensors</span>
+                <h1 id="topBarRoomStatus" class="font-headline tracking-tight font-bold text-sm text-primary">Connecting...</h1>
+            </div>
+        </header>
+
+        <div class="flex flex-col items-center gap-12 text-center">
+            <!-- MBOX Neon Logo -->
+            <div class="animate-neon-pulse select-none">
+                <div class="flex items-center justify-center space-x-1">
+                    <span class="text-6xl md:text-8xl font-headline font-black tracking-tighter text-primary">M</span>
+                    <span class="text-6xl md:text-8xl font-headline font-black tracking-tighter text-primary">B</span>
+                    <span class="text-6xl md:text-8xl font-headline font-black tracking-tighter text-primary">O</span>
+                    <span class="text-6xl md:text-8xl font-headline font-black tracking-tighter text-primary">X</span>
+                </div>
+            </div>
+
+            <!-- Loading status area -->
+            <div class="flex flex-col gap-8 max-w-xs w-full">
+                <div class="space-y-2">
+                    <p class="text-primary font-headline font-bold tracking-tight text-lg">
+                        Connecting to your karaoke room...
+                    </p>
+                    <div class="flex items-center justify-center gap-2 text-on-surface-variant/60 font-label text-xs uppercase tracking-widest">
+                        <span class="material-symbols-outlined text-[14px]">sensors</span>
+                        <span id="sessionStatus">Searching Session...</span>
+                    </div>
+                </div>
+                <!-- Custom Progress Bar -->
+                <div class="relative w-full h-1 bg-surface-container-highest rounded-full overflow-hidden">
+                    <div class="loading-bar-fill absolute top-0 left-0 h-full bg-primary shadow-[0_0_10px_rgba(129,236,255,1)] rounded-full"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="absolute bottom-16 w-full flex flex-col items-center gap-6">
+            <div class="opacity-20 flex items-center gap-2 select-none">
+                <div class="w-1 h-1 bg-primary rounded-full"></div>
+                <span class="text-[10px] font-headline font-extrabold tracking-[0.3em] uppercase">Powered by MBOX Studio</span>
+                <div class="w-1 h-1 bg-primary rounded-full"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ===================================================== -->
+    <!-- 📱 หน้าจอที่ 2: REGISTER REMOTE SCREEN (หน้าเลือกสี/ชื่อเล่น) -->
+    <!-- แทรกเข้ามาแทนคลาสเดิมและซ่อนไว้ก่อนด้วยคลาส 'hidden' -->
+    <!-- ===================================================== -->
+    <main id="remoteRegisterScreen" class="relative z-10 h-screen w-full flex flex-col items-center justify-between px-6 py-12 hidden">
+
+        <!-- ส่วนหัวและคอนเทนต์ลงทะเบียน -->
+        <div class="w-full max-w-[400px] flex flex-col items-center my-auto">
+            <h1 class="text-white text-3xl font-headline font-semibold tracking-wider uppercase text-center mb-8 select-none">
+                MBOX REMOTE
+            </h1>
+
+            <!-- ส่วนการเลือกสีอวาตาร์ -->
+            <div class="flex justify-between w-full mb-8 max-w-[340px]" id="avatarGroup">
+                <div class="avatar-circle w-12 h-12 rounded-full cursor-pointer transition-all duration-200 opacity-60 border-2 border-transparent bg-[#6a46fa] active" data-color="#6a46fa"></div>
+                <div class="avatar-circle w-12 h-12 rounded-full cursor-pointer transition-all duration-200 opacity-60 border-2 border-transparent bg-[#1a62e6]" data-color="#1a62e6"></div>
+                <div class="avatar-circle w-12 h-12 rounded-full cursor-pointer transition-all duration-200 opacity-60 border-2 border-transparent bg-[#b7056d]" data-color="#b7056d"></div>
+                <div class="avatar-circle w-12 h-12 rounded-full cursor-pointer transition-all duration-200 opacity-60 border-2 border-transparent bg-[#363541]" data-color="#363541"></div>
+                <div class="avatar-circle w-12 h-12 rounded-full cursor-pointer transition-all duration-200 opacity-60 border-2 border-transparent bg-[#5869ff]" data-color="#5869ff"></div>
+            </div>
+
+            <!-- ฟอร์มลงทะเบียน -->
+            <form method="post" id="joinForm" class="w-full space-y-5">
+                <input type="hidden" id="token" name="Token" value="" />
+                <input type="hidden" id="selectedColor" name="SelectedColor" value="#6a46fa" />
+
+                <div>
+                    <input type="text" id="nickname" name="Nickname" required autocomplete="off" maxlength="20"
+                           placeholder="ใส่ชื่อเล่น"
+                           class="w-full bg-[#1a1a1c] border border-[#2a2a2d] rounded-xl px-5 py-4 text-white placeholder-[#555558] text-base focus:outline-none focus:border-[#1e62f6] focus:bg-[#202022] transition-colors duration-200" />
+                </div>
+
+                <button onclick="Login();" type="button" class="w-full bg-[#1d5ce2] hover:bg-[#2669f5] text-white rounded-xl py-4 font-semibold text-lg shadow-[0_4px_15px_rgba(29,92,226,0.4)] hover:shadow-[0_4px_20px_rgba(38,105,245,0.6)] active:scale-[0.98] transition-all duration-200">
+                    เข้าร่วมห้อง
+                </button>
+            </form>
+        </div>
+
+        <!-- ส่วนลิงก์ LINE ล่างสุด -->
+        <div class="w-full text-center mt-4">
+            <a href="#" class="text-[#1653cc] hover:text-[#3b7fff] text-sm font-medium transition-colors duration-200 hover:underline">
+                หรือเข้าสู่ระบบด้วย LINE
+            </a>
+        </div>
+    </main>
+
+    <!-- Paho MQTT Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.js" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js" type="text/javascript"></script>
+
+
+    <script>
+        var baseTopic = "mbox/shop/";
+        var subscribe = baseTopic + "LOBBY/";
+        var connectON = false;
+        var testdata = '{"token":"{XXXXX}"}';
+        var currentRoom = "LOBBY/";
+        var appKey = "";
+
+        // ดึง Token รอไว้ตั้งแต่แรกเริ่มโหลดสคริปต์
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+        const globalToken = urlParams.get('t') || urlParams.get('token');
+        if(globalToken) {
+            document.getElementById('token').value = globalToken;
+        }
+
+        function connectShopemqx() {
+            if (connectON == false && subscribe != "") {
+                var clientId = "line_" + Math.round(Math.random() * 1000000000);
+                client = new Paho.MQTT.Client("ok.mbox.co.th", Number(8084), clientId);
+
+                client.onConnectionLost = onConnectionLost;
+                client.onMessageArrived = onMessageArrived;
+
+                client.connect({
+                    onSuccess: onConnect,
+                    useSSL: true,
+                    cleanSession: false
+                });
+            }
+        }
+
+        function onConnect() {
+            console.log("onConnect to: " + subscribe);
+            client.subscribe(subscribe);
+            sentMessage(testdata.replace('{XXXXX}', globalToken));
+            connectON = true;
+        }
+
+                // 🎯 ฟังก์ชันรับคำสั่งยืนยันห้องจากตู้ และทำการสลับหน้า UI หน้าเว็บ
+        function onMessageArrived(message) {
+            console.log("onMessageArrived:" + message.payloadString);
+
+            try {
+                var payload = JSON.parse(message.payloadString);
+
+                // 1. ตรวจสอบสถานะความสำเร็จ และมีข้อมูล room กับ tokenRe ส่งกลับมา
+                if (payload.status === "success" && payload.room && payload.tokenRe) {
+
+                    // 2. 🔐 CHECK: ตรวจสอบว่า tokenRe ที่ตอบกลับมา ตรงกับ token ที่เราถืออยู่หรือไม่
+                    if (payload.tokenRe !== globalToken) {
+                        console.warn("Token mismatch! Ignored message.");
+                        return; // ถ้า Token ไม่ตรงกัน ให้หยุดทำงานทันที (ไม่สลับหน้าจอ)
+                    }
+
+                    var newRoom = payload.room;
+
+                    // ป้องกันการย้ายเข้าห้องเดิมซ้ำๆ
+                    if (currentRoom !== newRoom) {
+                        console.log("Token verified! Moving from " + currentRoom + " to new room: " + newRoom);
+
+                        client.unsubscribe(subscribe);
+
+                        currentRoom = newRoom;
+                        subscribe = baseTopic + newRoom;
+
+                        client.subscribe(subscribe);
+                        console.log("Successfully subscribed to new topic: " + subscribe);
+
+                        // 🔄 เปลี่ยนแปลงหน้าจอจากหน้า Loading เป็นหน้า Register
+                        switchUIToRegisterRemote(newRoom);
+                    }
+
+
+                }
+            } catch (e) {
+                console.error("Error parsing MQTT payload JSON:", e);
+            }
+        }
+
+        // ฟังก์ชันสั่งการซ่อนหน้า Loading และดึงหน้ากรอกข้อมูลขึ้นมาแสดงผลเต็มหน้าจอ
+        function switchUIToRegisterRemote(roomName) {
+            // 1. ซ่อนหน้า Loading หน้าแรก
+            document.getElementById('loadingScreen').classList.add('hidden');
+
+            // 2. ปลดล็อกนำหน้าควบคุมเลือกสีและใส่ชื่อเล่นมาแสดงผล
+            document.getElementById('remoteRegisterScreen').classList.remove('hidden');
+
+            // 3. ปรับเปลี่ยนข้อมูลห้องให้จำค่าตัวเลขห้องจริง (เช่น Room 04, Lounge 04)
+            console.log("UI Switched for room: " + roomName);
+        }
+
+        function onConnectionLost(responseObject) {
+            if (responseObject.errorCode !== 0) {
+                console.log("onConnectionLost:" + responseObject.errorMessage);
+                connectON = false;
+
+                subscribe = baseTopic + "LOBBY/";
+                currentRoom = "LOBBY/";
+
+                // หากหลุดการเชื่อมต่อ ให้เด้งกลับมาหน้า Loading แรกสุดเพื่อทำการ Reconnect
+                document.getElementById('remoteRegisterScreen').classList.add('hidden');
+                document.getElementById('loadingScreen').classList.remove('hidden');
+
+                if (typeof clearInven === "function") clearInven();
+            }
+        }
+
+        function sentMessage(data) {
+            message = new Paho.MQTT.Message(data);
+            message.destinationName = subscribe;
+            client.send(message);
+        }
+
+        // ระบบเลือกวงกลมสีอวาตาร์สำหรับฟอร์มชุดใหม่
+        const circles = document.querySelectorAll('.avatar-circle');
+        const colorInput = document.getElementById('selectedColor');
+
+        circles.forEach(circle => {
+            circle.addEventListener('click', function() {
+                circles.forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                colorInput.value = this.getAttribute('data-color');
+            });
+        });
+
+        setInterval(connectShopemqx, 5000);
+
+                // เตรียมข้อมูลที่ต้องการส่งตามโครงสร้างใน Postman
+
+               
+
+        var myAppKey = '@appKey';
+        var requestData = {
+            appKey: "",
+            id: "",
+            shopid: "",
+            serial: "",
+            token: "",
+            data: "",
+            name: ""
+        };
+
+        // ฟังก์ชันสำหรับส่ง API
+        async function getAppToken() {
+
+            const targetApiUrl = '@loginApiUrl';
+            requestData.data = myAppKey;
+            try {
+                const response = await fetch(targetApiUrl + "login/getAppToken", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json" // ระบุว่าเราส่งข้อมูลเป็น JSON
+                    },
+                    body: JSON.stringify(requestData) // แปลง Object เป็น JSON String ก่อนส่ง
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json(); // แปลงผลลัพธ์ที่ตอบกลับมาเป็น JSON
+                appKey = result.data;
+                console.log("Response Data:", result);
+
+                // ตัวอย่างการนำข้อมูลไปใช้ (ตามในรูป Postman ของคุณ)
+                if (result.successFlag) {
+                    console.log("Token Data:", result.data);
+                }
+
+            } catch (error) {
+                console.error("เกิดข้อผิดพลาดในการเรียก API:", error);
+            }
+        }
+
+        // เรียกใช้งานฟังก์ชัน
+        getAppToken();
+
+        async function Login() {
+
+            // const targetApiUrl = '@loginApiUrl';
+            const targetApiUrl = 'https://localhost:7266/';
+            requestData.appKey = appKey;
+            requestData.id = getGuestDeviceId();
+            requestData.shopid = currentRoom.split('/')[2];
+            requestData.serial = currentRoom.split('/')[3];
+            requestData.token = globalToken;
+            requestData.data = "GUEST_ACCOUNT";
+            requestData.name = document.getElementById("nickname").value;
+            try {
+                const response = await fetch(targetApiUrl + "login/login", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json" // ระบุว่าเราส่งข้อมูลเป็น JSON
+                    },
+                    body: JSON.stringify(requestData) // แปลง Object เป็น JSON String ก่อนส่ง
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json(); // แปลงผลลัพธ์ที่ตอบกลับมาเป็น JSON
+                console.log("Login Data:", result);
+
+                // 🎯 บันทึกค่าลง Cookie เมื่อ Login สำเร็จ
+                if (result.successFlag || result.token) {
+
+                    // เรียกใช้ setCookie จาก JS ส่วนกลางได้เลย
+                    setCookie("appKey", appKey, 7);
+                    setCookie("userToken", result.token || "", 7);
+                    setCookie("userId", result.id || "", 7);
+                    setCookie("currentRoom", currentRoom, 7);
+                    setCookie("nickname", document.getElementById("nickname").value, 7);
+                    setCookie("imageurl", "urldisplay", 7);
+
+                    console.log("บันทึกข้อมูลลง Cookie เรียบร้อยแล้ว!");
+
+                    // สลับหน้าหรือ Redirect ไปหน้า Remote หลัก
+                    window.location.href = "/Home/home";
+                }
+
+                // ตัวอย่างการนำข้อมูลไปใช้ (ตามในรูป Postman ของคุณ)
+                if (result.successFlag) {
+                    console.log("Token Data:", result.data);
+                }
+
+            } catch (error) {
+                console.error("เกิดข้อผิดพลาดในการเรียก API:", error);
+            }
+        }
+
+        function getGuestDeviceId() {
+            // ดึง Token จาก URL มาใช้เป็นส่วนหนึ่งของ ID
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('t') || urlParams.get('token') || 'guest';
+
+            // เช็กว่ามี Guest ID ใน Session นี้หรือยัง
+            let guestId = sessionStorage.getItem("mbox_guest_id");
+
+            if (!guestId) {
+                // สุ่ม ID ใหม่เฉพาะการใช้งานครั้งนี้
+                guestId = "guest_" + token + "_" + Math.random().toString(36).substr(2, 9);
+                sessionStorage.setItem("mbox_guest_id", guestId);
+            }
+
+            return guestId;
+        }
+
+
+    </script>
+</body>
+</html>
+
+

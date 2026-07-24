@@ -1,0 +1,629 @@
+﻿@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
+
+@{
+    Layout = null;
+    ViewData["Title"] = "MBOX Karaoke";
+
+    var loginApiUrl = Configuration["ApiSettings:LoginApiUrl"];
+    var appKey = Configuration["ApiSettings:appKey"];
+    var img = Configuration["ApiSettings:imgUrl"];
+}
+
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>MBOX Karaoke</title>
+
+    <!-- 1. Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+
+    <!-- 2. Google Fonts & Material Symbols -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&display=swap" rel="stylesheet" />
+
+    <script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "background": "#0e0e12",
+                "surface-container": "#19191e",
+                "surface-container-high": "#1f1f25",
+                "surface-container-highest": "#25252b",
+                "primary": "#81ecff",
+                "secondary": "#ac8aff",
+                "on-surface": "#f3eff6",
+                "on-surface-variant": "#acaab0",
+                "outline-variant": "#48474c"
+              },
+              borderRadius: {
+                "DEFAULT": "0.5rem",
+                "lg": "1rem",
+                "xl": "1.5rem",
+                "2xl": "2rem",
+                "full": "9999px"
+              }
+            }
+          }
+        }
+    </script>
+    <style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Custom styling for range input track & thumb */
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #00e5ff;
+            box-shadow: 0 0 10px rgba(0, 229, 255, 0.8);
+            cursor: pointer;
+            margin-top: -6px;
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #25252b;
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-['Inter'] min-h-screen pb-32 select-none">
+
+    <!-- Top Navigation Bar -->
+    <nav class="fixed top-0 w-full z-50 bg-[#0e0e12]/80 backdrop-blur-xl flex justify-between items-center px-6 h-16 shadow-[0_2px_20px_rgba(0,229,255,0.05)]">
+        <div class="flex items-center gap-2 transition-colors duration-300 text-slate-500" id="connectionStatusContainer">
+            <!-- ไอคอนสถานะ -->
+            <span class="material-symbols-outlined text-xl" id="connectionIcon">sensors_off</span>
+
+            <!-- ข้อความแสดง User ID และ Status -->
+            <span class="font-['Plus_Jakarta_Sans'] font-bold text-sm" id="connectionStatusText">Loading...</span>
+        </div>
+
+        <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-high text-primary border border-primary/20 text-xs font-bold font-['Plus_Jakarta_Sans']">
+            <span class="material-symbols-outlined text-sm">timer</span>
+            <span id="roomTimer">42:15</span>
+        </div>
+    </nav>
+
+    <main class="pt-20 px-6 max-w-2xl mx-auto">
+
+        <!-- Search Input Bar -->
+        <section class="mb-6" id="searchBarSection">
+            <div class="relative flex items-center">
+                <span class="material-symbols-outlined absolute left-5 text-primary text-2xl pointer-events-none">search</span>
+                <input id="searchInput"
+                       oninput="handleSearchInput(this.value)"
+                       onfocus="switchMode('search')"
+                       class="w-full bg-surface-container h-14 pl-14 pr-12 rounded-2xl border-none text-base font-medium text-on-surface focus:ring-2 focus:ring-primary placeholder:text-outline-variant/60 transition-all shadow-md"
+                       placeholder="Search songs by title or artist"
+                       type="text"
+                       autocomplete="off" />
+                <button type="button"
+                        onclick="clearSearch()"
+                        class="absolute right-4 text-outline-variant hover:text-on-surface transition-colors p-1 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-xl">close</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Category Filter Chips -->
+        <section id="categoryContainer" class="mb-8 overflow-x-auto hide-scrollbar flex gap-2.5 -mx-6 px-6">
+            <div class="h-9 w-16 bg-surface-container-highest rounded-full animate-pulse shrink-0"></div>
+            <div class="h-9 w-24 bg-surface-container-highest rounded-full animate-pulse shrink-0"></div>
+            <div class="h-9 w-20 bg-surface-container-highest rounded-full animate-pulse shrink-0"></div>
+        </section>
+
+        <!-- ================= VIEW 1: HOME ================= -->
+        <div id="homeView" class="space-y-6">
+            <section>
+                <h3 class="text-[11px] uppercase tracking-[0.2em] font-black text-outline-variant mb-4">Trending Now</h3>
+                <div class="space-y-3">
+                    <div class="bg-surface-container p-4 rounded-2xl flex items-center justify-between hover:bg-surface-container-high transition-colors">
+                        <div class="min-w-0 pr-4">
+                            <h4 class="font-bold text-on-surface text-base truncate">Die With A Smile</h4>
+                            <p class="text-xs text-on-surface-variant truncate mt-0.5">Bruno Mars & Lady Gaga</p>
+                        </div>
+                        <button class="h-10 w-10 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-black flex items-center justify-center shrink-0 transition-all active:scale-90">
+                            <span class="material-symbols-outlined text-xl">add</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ================= VIEW 2: SEARCH RESULTS ================= -->
+        <div id="searchView" class="hidden space-y-6 pb-36">
+
+            <section id="recentSearchesContainer">
+                <h3 class="text-[11px] uppercase tracking-[0.2em] font-black text-outline-variant mb-3">Recent Searches</h3>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="setSearchValue('Bruno Mars')" class="bg-surface-container-high px-3 py-1.5 rounded-xl text-xs text-on-surface-variant border border-outline-variant/10 flex items-center gap-1.5 hover:text-on-surface">
+                        <span>Bruno Mars</span>
+                        <span class="material-symbols-outlined text-xs">history</span>
+                    </button>
+                    <button onclick="setSearchValue('Billie Eilish')" class="bg-surface-container-high px-3 py-1.5 rounded-xl text-xs text-on-surface-variant border border-outline-variant/10 flex items-center gap-1.5 hover:text-on-surface">
+                        <span>Billie Eilish</span>
+                        <span class="material-symbols-outlined text-xs">history</span>
+                    </button>
+                </div>
+            </section>
+
+            <section>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-lg text-on-surface">Search Results</h3>
+                    <span id="matchCount" class="text-xs font-bold text-primary tracking-wider uppercase">0 Matches</span>
+                </div>
+
+                <div id="resultsContainer" class="space-y-3">
+                    <!-- ผลลัพธ์จะถูกแสดงตรงนี้ -->
+                </div>
+            </section>
+
+        </div>
+
+        <!-- ================= VIEW 3: QUEUE SCREEN ================= -->
+        <div id="queueView" class="hidden space-y-6">
+
+            <!-- Tag & Header -->
+            <div>
+                <div class="inline-block px-3 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 font-bold text-[10px] tracking-widest uppercase mb-2">
+                    QUEUE FAIRNESS ACTIVE
+                </div>
+                <h2 class="text-3xl font-extrabold text-on-surface font-['Plus_Jakarta_Sans']">Up Next</h2>
+                <p class="text-xs text-on-surface-variant mt-1" id="nextTurnInfo">Next up: 2nd turn for Beer</p>
+            </div>
+
+            <!-- Card 1: Now Playing (Glowing Effect) -->
+            <div class="relative group">
+                <div class="absolute -inset-0.5 bg-gradient-to-r from-primary to-cyan-500 rounded-3xl blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
+
+                <div class="relative bg-surface-container p-4 rounded-3xl border border-white/5 shadow-2xl space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3.5 min-w-0 pr-2">
+                            <div id="nowPlayingImgContainer" class="relative w-14 h-14 shrink-0 rounded-2xl overflow-hidden bg-surface-container-highest flex items-center justify-center">
+                                <span id="nowPlayingDefaultIcon" class="material-symbols-outlined text-slate-500 text-2xl">music_note</span>
+                                <img id="nowPlayingImg" src="" class="w-full h-full object-cover hidden" alt="cover" />
+                                <div id="nowPlayingPlayOverlay" class="absolute inset-0 bg-black/40 flex items-center justify-center hidden">
+                                    <span class="material-symbols-outlined text-primary text-xl">play_arrow</span>
+                                </div>
+                            </div>
+
+                            <div class="min-w-0">
+                                <span class="text-[10px] font-extrabold tracking-widest text-slate-400 uppercase">NOW PLAYING</span>
+                                <h4 class="font-extrabold text-on-surface text-base truncate mt-0.5" id="nowPlayingTitle">ไม่มีเพลงกำลังเล่น</h4>
+                                <div class="flex items-center gap-1.5 mt-1 text-xs text-on-surface-variant">
+                                    <div id="nowPlayingUserAvatar" class="w-5 h-5 rounded-full overflow-hidden shrink-0 bg-slate-700 text-slate-300 flex items-center justify-center text-[10px] font-bold">
+                                        -
+                                    </div>
+                                    <span>Added by <strong class="text-on-surface" id="nowPlayingAddedBy">-</strong></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col items-end gap-3 shrink-0">
+                            <span class="material-symbols-outlined text-slate-600 text-lg">drag_handle</span>
+                            <span class="text-xs font-bold text-primary font-mono" id="nowPlayingDuration">00:00 / 00:00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- List: Queue Items -->
+            <div class="space-y-3" id="queueItemsContainer">
+            </div>
+
+            <!-- Bottom Stats Grid -->
+            <div class="grid grid-cols-2 gap-4 pt-2">
+                <div class="bg-surface-container p-5 rounded-3xl border border-white/5 flex flex-col justify-between h-36">
+                    <div class="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+                        <span class="material-symbols-outlined">group</span>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-on-surface text-base">Session Size</h4>
+                        <p class="text-xs text-on-surface-variant mt-0.5" id="sessionSizeText">8 Guests active</p>
+                    </div>
+                </div>
+
+                <div class="bg-gradient-to-br from-surface-container to-pink-950/30 p-5 rounded-3xl border border-pink-500/10 flex flex-col justify-between h-36">
+                    <div class="w-10 h-10 rounded-2xl bg-pink-500/10 text-pink-400 flex items-center justify-center">
+                        <span class="material-symbols-outlined">favorite</span>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-on-surface text-base">Vibe Level</h4>
+                        <p class="text-xs text-on-surface-variant mt-0.5" id="vibeLevelText">High Intensity</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ================= VIEW 4: NOW PLAYING FULLSCREEN SCREEN ================= -->
+        <div id="playingView" class="hidden space-y-6 pb-20 animate-in fade-in duration-300">
+            <!-- 🖼️ Main Cover Card -->
+            <div class="relative w-full aspect-square rounded-[2rem] overflow-hidden bg-slate-900 border border-white/10 shadow-2xl flex items-center justify-center">
+                <img id="playingFullCover" src="https://picsum.photos/600" class="w-full h-full object-cover" alt="Song Cover" />
+            </div>
+
+            <!-- 🎵 Track Info -->
+            <div class="space-y-1">
+                <div class="flex items-center gap-2 text-pink-500 text-xs font-bold uppercase tracking-widest">
+                    <span>CURRENT PERFORMANCE</span>
+                    <span class="material-symbols-outlined text-sm animate-pulse">equalizer</span>
+                </div>
+                <h2 id="playingFullTitle" class="text-3xl font-black text-white truncate">Midnight City</h2>
+                <p id="playingFullArtist" class="text-sm font-semibold text-cyan-400 truncate">M83 • Synthwave Dreams</p>
+            </div>
+
+            <!-- ⏱️ Timeline & Progress Bar -->
+            <div class="space-y-2">
+                <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden relative cursor-pointer">
+                    <div id="playingProgressBar" class="bg-[#00e5ff] h-full w-[65%] rounded-full shadow-[0_0_12px_#00e5ff]"></div>
+                </div>
+                <div class="flex justify-between text-xs font-mono text-slate-400 font-semibold">
+                    <span id="playingCurrentTime">02:45</span>
+                    <span id="playingTotalTime">04:03</span>
+                </div>
+            </div>
+
+            <!-- 🎮 Playback Controls -->
+            <div class="flex items-center justify-center gap-6 py-2">
+                <button type="button" onclick="prevSong(event)" class="w-14 h-14 rounded-full bg-white/5 hover:bg-white/10 active:scale-95 text-white flex items-center justify-center transition-all">
+                    <span class="material-symbols-outlined text-2xl">skip_previous</span>
+                </button>
+                <button type="button" onclick="togglePausePlay(event)" class="w-20 h-20 rounded-full bg-[#00e5ff] text-slate-950 flex items-center justify-center transition-all shadow-[0_0_30px_rgba(0,229,255,0.4)] hover:scale-105 active:scale-95">
+                    <span id="playingFullPauseIcon" class="material-symbols-outlined text-4xl">pause</span>
+                </button>
+                <button type="button" onclick="skipSong(event)" class="w-14 h-14 rounded-full bg-white/5 hover:bg-white/10 active:scale-95 text-white flex items-center justify-center transition-all">
+                    <span class="material-symbols-outlined text-2xl">skip_next</span>
+                </button>
+            </div>
+
+            <!-- 🔊 Volume Control Slider -->
+            <div class="bg-surface-container p-4 rounded-3xl border border-white/5 flex items-center gap-4">
+                <span class="material-symbols-outlined text-cyan-400 text-xl">volume_up</span>
+                <div class="flex-1 flex flex-col gap-1">
+                    <div class="flex justify-between text-[10px] font-bold tracking-widest text-slate-400 uppercase">
+                        <span>OUTPUT VOLUME</span>
+                        <span id="volumeValueText" class="text-cyan-400">82</span>
+                    </div>
+                    <input type="range" id="volumeSlider" min="0" max="100" value="82" oninput="document.getElementById('volumeValueText').innerText = this.value" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer" />
+                </div>
+            </div>
+
+            <!-- 🎙️ Audio Channel / Voice Cut Mode Buttons -->
+            <div class="bg-surface-container p-4 rounded-3xl border border-white/5 space-y-3">
+                <div class="text-[10px] font-bold tracking-widest text-slate-400 uppercase text-center">
+                    AUDIO CHANNEL / VOCAL CONTROL
+                </div>
+                <div class="grid grid-cols-3 gap-2.5">
+                    <!-- Stereo Mode -->
+                    <button type="button" onclick="setAudioChannel('stereo')" id="btnAudioStereo" class="py-3 px-2 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-95 text-slate-300 text-xs font-bold flex flex-col items-center gap-1 transition-all border border-white/5">
+                        <span class="material-symbols-outlined text-xl text-cyan-400">graphic_eq</span>
+                        <span>Stereo</span>
+                    </button>
+
+                    <!-- Vocal Cut (Default Active) -->
+                    <button type="button" onclick="setAudioChannel('vocal')" id="btnAudioVocal" class="py-3 px-2 rounded-2xl bg-gradient-to-b from-cyan-500/20 to-cyan-500/5 text-cyan-400 border border-cyan-500/40 text-xs font-bold flex flex-col items-center gap-1 transition-all shadow-[0_0_15px_rgba(0,229,255,0.15)]">
+                        <span class="material-symbols-outlined text-xl">mic_off</span>
+                        <span>Vocal</span>
+                    </button>
+
+                    <!-- Karaoke Mode -->
+                    <button type="button" onclick="setAudioChannel('karaoke')" id="btnAudioKaraoke" class="py-3 px-2 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-95 text-slate-300 text-xs font-bold flex flex-col items-center gap-1 transition-all border border-white/5">
+                        <span class="material-symbols-outlined text-xl text-purple-400">queue_music</span>
+                        <span>Karaoke</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ⏭️ Next Up Mini Banner -->
+            <div class="bg-surface-container p-4 rounded-3xl border border-white/5 flex items-center justify-between cursor-pointer hover:bg-surface-container-high transition-colors" onclick="switchMode('queue')">
+                <div class="flex items-center gap-3">
+                    <img src="https://picsum.photos/100" class="w-10 h-10 rounded-2xl object-cover" alt="Next song cover" />
+                    <div class="min-w-0">
+                        <span class="text-[9px] font-extrabold tracking-widest text-cyan-400 uppercase">NEXT UP</span>
+                        <h5 class="font-bold text-white text-sm truncate">Flowers</h5>
+                        <p class="text-xs text-slate-400 truncate">Miley Cyrus • Endless Summer</p>
+                    </div>
+                </div>
+                <span class="material-symbols-outlined text-slate-500">chevron_right</span>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="fixed bottom-0 w-full rounded-t-3xl z-50 bg-[#19191e]/90 backdrop-blur-2xl flex justify-around items-center h-20 pb-2 border-t border-[#48474c]/15 shadow-2xl">
+        <button onclick="switchMode('home')" id="navHome" class="flex flex-col items-center justify-center w-full text-primary">
+            <span class="material-symbols-outlined text-2xl" id="iconHome">home</span>
+            <span class="font-['Plus_Jakarta_Sans'] text-[10px] font-bold uppercase tracking-widest mt-1">Home</span>
+        </button>
+
+        <button onclick="switchMode('search')" id="navSearch" class="flex flex-col items-center justify-center w-full text-slate-500 hover:text-primary transition-colors">
+            <span class="material-symbols-outlined text-2xl" id="iconSearch">search</span>
+            <span class="font-['Plus_Jakarta_Sans'] text-[10px] font-bold uppercase tracking-widest mt-1">Search</span>
+        </button>
+
+        <button onclick="switchMode('queue')" id="navQueue" class="flex flex-col items-center justify-center w-full text-slate-500 hover:text-primary transition-colors">
+            <span class="material-symbols-outlined text-2xl" id="iconQueue">queue_music</span>
+            <span class="font-['Plus_Jakarta_Sans'] text-[10px] font-bold uppercase tracking-widest mt-1">Queue</span>
+        </button>
+
+        <button onclick="switchMode('playing')" id="navPlaying" class="flex flex-col items-center justify-center w-full text-slate-500 hover:text-primary transition-colors">
+            <span class="material-symbols-outlined text-2xl" id="iconPlaying">music_note</span>
+            <span class="font-['Plus_Jakarta_Sans'] text-[10px] font-bold uppercase tracking-widest mt-1">Playing</span>
+        </button>
+    </nav>
+
+    <!-- ================= MINI NOW PLAYING BAR ================= -->
+    <div id="miniNowPlayingBar"
+         class="fixed bottom-24 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md z-40 bg-[#12161f]/95 backdrop-blur-md p-3.5 rounded-3xl border border-cyan-500/20 shadow-2xl flex flex-col gap-2.5 transition-all overflow-hidden">
+
+        <div class="flex items-center justify-between gap-3 min-w-0">
+            <!-- ฝั่งซ้าย: รูปปก + ข้อมูลเพลง (กดเพื่อเปิดหน้า Playing) -->
+            <div class="flex items-center gap-3 min-w-0 flex-1 cursor-pointer" onclick="switchMode('playing')">
+                <div class="relative w-11 h-11 shrink-0 rounded-2xl overflow-hidden bg-slate-800/80 border border-white/10 flex items-center justify-center">
+                    <img id="miniSongCover" src="" class="w-full h-full object-cover hidden" alt="cover" />
+                    <span id="miniSongIcon" class="material-symbols-outlined text-cyan-400 text-2xl animate-pulse">music_note</span>
+                </div>
+
+                <div class="min-w-0 flex-1 space-y-0.5">
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-[9px] font-black tracking-widest text-[#00e5ff] uppercase bg-[#00e5ff]/10 px-1.5 py-0.5 rounded">NOW PLAYING</span>
+                    </div>
+                    <h4 class="font-bold text-white text-sm truncate leading-tight" id="miniSongTitle">
+                        ไม่มีเพลงกำลังเล่น
+                    </h4>
+                    <p class="text-xs text-slate-400 truncate" id="miniSongArtist">
+                        -
+                    </p>
+                </div>
+            </div>
+
+            <!-- ฝั่งขวา: ปุ่มควบคุม -->
+            <div class="flex items-center gap-1.5 shrink-0 pl-1">
+                <button type="button"
+                        onclick="togglePausePlay(event)"
+                        class="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 text-[#00e5ff] flex items-center justify-center transition-all">
+                    <span id="btnPauseIcon" class="material-symbols-outlined text-xl">pause</span>
+                </button>
+
+                <button type="button"
+                        onclick="skipSong(event)"
+                        class="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 text-[#00e5ff] flex items-center justify-center transition-all">
+                    <span class="material-symbols-outlined text-xl">skip_next</span>
+                </button>
+
+                <div class="cursor-pointer pl-0.5 text-slate-500 hover:text-white transition-colors" onclick="switchMode('playing')">
+                    <span class="material-symbols-outlined text-lg">chevron_right</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- หลอดสีฟ้าเรืองแสง -->
+        <div class="w-full bg-slate-800/80 h-1 rounded-full overflow-hidden">
+            <div id="miniProgressBar"
+                 class="bg-[#00e5ff] h-full w-0 transition-all duration-300 shadow-[0_0_8px_#00e5ff]"></div>
+        </div>
+    </div>
+
+    <!-- 🟢 Floating Toast Notification -->
+    <div id="queueToast"
+         class="fixed top-6 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-2 bg-[#161a23]/90 text-cyan-400 px-5 py-2.5 rounded-full text-xs font-bold border border-cyan-500/30 shadow-[0_4px_20px_rgba(0,229,255,0.25)] backdrop-blur-md transition-all duration-300 opacity-0 pointer-events-none hidden">
+        <span class="material-symbols-outlined text-base">check_circle</span>
+        <span id="queueToastMessage">Added to queue!</span>
+    </div>
+
+    <!-- 🔲 Modal Backdrop -->
+    <div id="addToQueueModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm hidden">
+        <div class="relative w-full max-w-xs bg-[#161a23] rounded-[2.5rem] p-5 border border-white/10 shadow-2xl flex flex-col items-center gap-5 text-center text-white animate-in fade-in zoom-in duration-200">
+            <div class="relative w-full aspect-square rounded-3xl overflow-hidden shadow-2xl bg-slate-800">
+                <img id="popupSongCover" src="https://picsum.photos/400" alt="Song Cover" class="w-full h-full object-cover" />
+            </div>
+
+            <div class="space-y-1 w-full px-2">
+                <h3 id="popupSongTitle" class="text-2xl font-black tracking-tight truncate">
+                    Midnight City
+                </h3>
+                <p id="popupSongArtist" class="text-sm font-semibold text-cyan-400/90 truncate">
+                    M83
+                </p>
+
+                <div id="popupCategoryContainer" class="flex items-center justify-center pt-1">
+                    <span id="popupCategory" class="bg-white/5 text-slate-300 text-[11px] font-medium px-2.5 py-0.5 rounded-md border border-white/5">
+                        เพลงไทย
+                    </span>
+                </div>
+            </div>
+
+            <div class="w-full space-y-2.5 pt-1">
+                <button type="button"
+                        onclick="confirmAddToQueue()"
+                        class="w-full py-3.5 px-4 rounded-full bg-[#00e5ff] hover:bg-[#00cce6] active:scale-[0.98] text-slate-950 font-black tracking-wider flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,229,255,0.4)] transition-all">
+                    <span class="material-symbols-outlined text-xl">playlist_add</span>
+                    <span>ADD TO QUEUE</span>
+                </button>
+
+                <div class="grid grid-cols-2 gap-2.5">
+                    <button type="button"
+                            onclick="confirmPlayNext()"
+                            class="py-3 px-3 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-95 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all border border-white/5">
+                        <span class="material-symbols-outlined text-base text-cyan-400">queue_play_next</span>
+                        <span>Play Next</span>
+                    </button>
+
+                    <button type="button"
+                            onclick="closeModal()"
+                            class="py-3 px-3 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-95 text-slate-300 hover:text-white text-xs font-bold transition-all border border-white/5">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ปุ่ม Floating Back to Top -->
+    <button id="backToTopBtn"
+            onclick="scrollToTop()"
+            class="fixed bottom-24 right-4 z-40 p-3 bg-primary text-black rounded-full shadow-lg opacity-0 pointer-events-none transition-all duration-300 hover:scale-110 active:scale-95 flex items-center justify-center">
+        <span class="material-symbols-outlined text-2xl font-bold">arrow_upward</span>
+    </button>
+
+    <script>
+        window.loginApiUrl = '';
+        window.imgUrl = '@img';
+    </script>
+
+    <script src="~/js/site.js"></script>
+    <script src="~/js/song.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js" type="text/javascript"></script>
+    <script src="~/js/mqtt.js"></script>
+
+    <script>
+        // สลับหน้า View (Home <-> Search <-> Queue <-> Playing)
+        function switchMode(mode) {
+            const homeView = document.getElementById('homeView');
+            const searchView = document.getElementById('searchView');
+            const queueView = document.getElementById('queueView');
+            const playingView = document.getElementById('playingView');
+
+            const navHome = document.getElementById('navHome');
+            const navSearch = document.getElementById('navSearch');
+            const navQueue = document.getElementById('navQueue');
+            const navPlaying = document.getElementById('navPlaying');
+
+            const searchBarSection = document.getElementById('searchBarSection');
+            const categoryContainer = document.getElementById('categoryContainer');
+            const miniNowPlayingBar = document.getElementById('miniNowPlayingBar');
+            const input = document.getElementById('searchInput');
+
+            const activeNavClass = "flex flex-col items-center justify-center w-full text-primary";
+            const inactiveNavClass = "flex flex-col items-center justify-center w-full text-slate-500 hover:text-primary transition-colors";
+
+            if (navHome) navHome.className = inactiveNavClass;
+            if (navSearch) navSearch.className = inactiveNavClass;
+            if (navQueue) navQueue.className = inactiveNavClass;
+            if (navPlaying) navPlaying.className = inactiveNavClass;
+
+            if (mode === 'search') {
+                if (homeView) homeView.classList.add('hidden');
+                if (searchView) searchView.classList.remove('hidden');
+                if (queueView) queueView.classList.add('hidden');
+                if (playingView) playingView.classList.add('hidden');
+
+                if (searchBarSection) searchBarSection.classList.remove('hidden');
+                if (categoryContainer) categoryContainer.classList.remove('hidden');
+                if (miniNowPlayingBar) miniNowPlayingBar.classList.remove('hidden');
+
+                if (navSearch) navSearch.className = activeNavClass;
+            }
+            else if (mode === 'queue') {
+                if (homeView) homeView.classList.add('hidden');
+                if (searchView) searchView.classList.add('hidden');
+                if (queueView) queueView.classList.remove('hidden');
+                if (playingView) playingView.classList.add('hidden');
+
+                if (searchBarSection) searchBarSection.classList.add('hidden');
+                if (categoryContainer) categoryContainer.classList.add('hidden');
+                if (miniNowPlayingBar) miniNowPlayingBar.classList.add('hidden');
+
+                if (navQueue) navQueue.className = activeNavClass;
+            }
+            else if (mode === 'playing') {
+                if (homeView) homeView.classList.add('hidden');
+                if (searchView) searchView.classList.add('hidden');
+                if (queueView) queueView.classList.add('hidden');
+                if (playingView) playingView.classList.remove('hidden');
+
+                if (searchBarSection) searchBarSection.classList.add('hidden');
+                if (categoryContainer) categoryContainer.classList.add('hidden');
+                if (miniNowPlayingBar) miniNowPlayingBar.classList.add('hidden');
+
+                if (navPlaying) navPlaying.className = activeNavClass;
+            }
+            else { // Home
+                if (homeView) homeView.classList.remove('hidden');
+                if (searchView) searchView.classList.add('hidden');
+                if (queueView) queueView.classList.add('hidden');
+                if (playingView) playingView.classList.add('hidden');
+
+                if (searchBarSection) searchBarSection.classList.remove('hidden');
+                if (categoryContainer) categoryContainer.classList.remove('hidden');
+                if (miniNowPlayingBar) miniNowPlayingBar.classList.remove('hidden');
+
+                if (navHome) navHome.className = activeNavClass;
+                if (input) input.value = '';
+            }
+        }
+
+        // ฟังก์ชันสลับโหมดเสียง Stereo, Vocal, Karaoke
+        function setAudioChannel(type) {
+            const btnStereo = document.getElementById('btnAudioStereo');
+            const btnVocal = document.getElementById('btnAudioVocal');
+            const btnKaraoke = document.getElementById('btnAudioKaraoke');
+
+            const inactiveStyle = "py-3 px-2 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-95 text-slate-300 text-xs font-bold flex flex-col items-center gap-1 transition-all border border-white/5";
+            const activeCyanStyle = "py-3 px-2 rounded-2xl bg-gradient-to-b from-cyan-500/20 to-cyan-500/5 text-cyan-400 border border-cyan-500/40 text-xs font-bold flex flex-col items-center gap-1 transition-all shadow-[0_0_15px_rgba(0,229,255,0.15)]";
+
+            if (btnStereo) btnStereo.className = inactiveStyle;
+            if (btnVocal) btnVocal.className = inactiveStyle;
+            if (btnKaraoke) btnKaraoke.className = inactiveStyle;
+
+            if (type === 'stereo' && btnStereo) btnStereo.className = activeCyanStyle;
+            if (type === 'vocal' && btnVocal) btnVocal.className = activeCyanStyle;
+            if (type === 'karaoke' && btnKaraoke) btnKaraoke.className = activeCyanStyle;
+
+            // TODO: ส่งคำสั่ง MQTT หรือควบคุมการตัดเสียงเพิ่มเติมที่นี่ได้ครับ
+            if (typeof sendMqttChannelCommand === 'function') {
+                sendMqttChannelCommand(type);
+            }
+        }
+
+        function clearSearch() {
+            const input = document.getElementById('searchInput');
+            if (input) input.value = '';
+            switchMode('home');
+            if (typeof fetchSongs === 'function') {
+                fetchSongs('', '', true);
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            if (typeof checkAuthToken === 'function') {
+                checkAuthToken('token', '/Login');
+            }
+        });
+    </script>
+</body>
+</html>

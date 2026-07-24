@@ -671,6 +671,7 @@ function renderQueueUI(data) {
             // หลังจากใส่ HTML แล้ว ผูก swipe handlers ให้แต่ละรายการ
             // ให้หน่วงนิดหนึ่งเพื่อให้ DOM อัพเดตเสร็จ
             setTimeout(() => attachSwipeHandlersForQueueItems(), 20);
+            setTimeout(() => attachQueueInteractionHandlers(), 20);
         }
     }
 
@@ -1237,3 +1238,4 @@ function attachQueueInteractionHandlers() {
         itemEl.addEventListener('dragstart', (e) => e.preventDefault());
     });
 }
+

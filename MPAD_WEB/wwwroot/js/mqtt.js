@@ -338,6 +338,7 @@ let isPaused = false;
 // 🕹️ Shortcut Control Functions (ส่งสั่ง MQTT)
 // ==========================================
 
+// แทนที่ฟังก์ชัน togglePausePlay เดิมด้วยอันนี้
 function togglePausePlay(event) {
     if (event) event.stopPropagation();
 
@@ -348,30 +349,25 @@ function togglePausePlay(event) {
     // ส่งคำสั่งผ่าน MQTT
     sentMessage({ playControl: command });
 
-    // อัปเดตไอคอนของปุ่มต่างๆ ที่เกี่ยวข้อง
+    // อัปเดตไอคอนของปุ่มต่างๆ ที่เกี่ยวข้อง (ไม่เปลี่ยนขนาด)
     const btnIcon = document.getElementById('btnPauseIcon');               // mini bar
-    const playingIcon = document.getElementById('playingFullPauseIcon');   // playing full view (ไอคอนภายในปุ่มกลาง)
-    const playingMain = document.getElementById('playingMainToggle');      // ปุ่มกลางตัวจริง (ถ้าต้องการเปลี่ยน class/สี)
+    const playingIcon = document.getElementById('playingFullPauseIcon');   // ไอคอนภายในปุ่มกลาง (playing view)
+    const playingMain = document.getElementById('playingMainToggle');      // ปุ่มกลางตัวจริง
 
     const iconName = isPaused ? "play_arrow" : "pause";
 
     if (btnIcon) btnIcon.innerText = iconName;
     if (playingIcon) playingIcon.innerText = iconName;
 
-    // (ออปชัน) ปรับสไตล์ปุ่มกลางเมื่อ paused / playing
+    // ปรับสีพื้นหลัง/ข้อความของปุ่มกลาง แต่ไม่แตะขนาด (w-20 h-20)
     if (playingMain) {
+        // เก็บคลาสสีที่ต้องการ (ไม่กระทบขนาด)
         if (isPaused) {
-            // ตัวอย่าง: เปลี่ยนพื้นหลังให้จางลงเมื่อเป็น paused
-            playingMain.classList.remove('bg-[#00e5ff]');
-            playingMain.classList.add('bg-white/5');
-            playingMain.classList.remove('text-slate-950');
-            playingMain.classList.add('text-white');
+            playingMain.classList.remove('bg-[#00e5ff]', 'text-slate-950', 'shadow-[0_0_30px_rgba(0,229,255,0.3)]');
+            playingMain.classList.add('bg-white/5', 'text-white', 'shadow-sm');
         } else {
-            // กลับเป็นสีเดิมเมื่อเล่น
-            playingMain.classList.remove('bg-white/5');
-            playingMain.classList.add('bg-[#00e5ff]');
-            playingMain.classList.remove('text-white');
-            playingMain.classList.add('text-slate-950');
+            playingMain.classList.remove('bg-white/5', 'text-white', 'shadow-sm');
+            playingMain.classList.add('bg-[#00e5ff]', 'text-slate-950', 'shadow-[0_0_30px_rgba(0,229,255,0.3)]');
         }
     }
 }

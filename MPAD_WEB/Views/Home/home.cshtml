@@ -296,10 +296,9 @@
                 </div>
             </div>
 
-            <!-- 🎮 Playback Controls -->
-            <!-- 🎮 Playback Controls (ปรับเป็น 2 ปุ่ม: เล่น/หยุด และ ข้ามเพลง) -->
+            <!-- 🎮 Playback Controls (2 ปุ่ม ขนาดเท่ากัน) -->
             <div class="flex items-center justify-center gap-6 py-2">
-                <!-- Play / Pause (ใหญ่ตรงกลาง) -->
+                <!-- Play / Pause (กลาง) -->
                 <button type="button"
                         onclick="togglePausePlay(event)"
                         id="playingMainToggle"
@@ -307,12 +306,12 @@
                     <span id="playingFullPauseIcon" class="material-symbols-outlined text-4xl">pause</span>
                 </button>
 
-                <!-- Skip Next (ข้างขวา) -->
+                <!-- Skip Next (ขวา) - ขนาดเท่ากันกับปุ่มกลาง -->
                 <button type="button"
                         onclick="skipSong(event)"
                         id="playingSkip"
-                        class="w-14 h-14 rounded-full bg-white/5 hover:bg-white/10 active:scale-95 text-white flex items-center justify-center transition-all">
-                    <span class="material-symbols-outlined text-2xl">skip_next</span>
+                        class="w-20 h-20 rounded-full bg-white/5 hover:bg-white/10 active:scale-95 text-white flex items-center justify-center transition-all shadow-sm">
+                    <span class="material-symbols-outlined text-3xl">skip_next</span>
                 </button>
             </div>
 

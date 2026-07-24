@@ -385,7 +385,7 @@
 
         <!-- ====== Effects View (เพิ่มไว้ข้างๆ homeView / searchView / queueView / playingView) ====== -->
         <!-- ===== Effects View (แทนที่ของเดิม) ===== -->
-        <div id="effectsView" class="space-y-8 pb-36 max-w-lg mx-auto px-6">
+        <div id="effectsView" class="hidden space-y-8 pb-36 max-w-lg mx-auto px-6">
             <!-- Header Title Section -->
             <div class="mb-10 text-center">
                 <h2 class="font-headline text-4xl font-extrabold tracking-tighter mb-2">Sound Board</h2>
@@ -680,6 +680,7 @@
     <script src="~/js/song.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js" type="text/javascript"></script>
     <script src="~/js/mqtt.js"></script>
+    <script src="~/js/effects.js"></script>
 
     <script>
         // สลับหน้า View (Home <-> Search <-> Queue <-> Playing)

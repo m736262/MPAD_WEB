@@ -670,3 +670,60 @@ function renderQueueUI(data) {
     if (playingTotalTime) playingTotalTime.innerText = durationStr;
     if (playingFullPauseIcon) playingFullPauseIcon.innerText = isPaused ? 'play_arrow' : 'pause';
 }
+
+// ====== Volume control -> ส่ง MQTT (เพิ่มลงใน MPAD_WEB/wwwroot/js/mqtt.js) ======
+
+// ตัวแปรช่วยสำหรับ debounce
+let volumeSendTimeout = null;
+const VOLUME_DEBOUNCE_MS = 150;
+
+// ฟังก์ชันส่งคำสั่ง volume ผ่าน MQTT
+function sendVolumeControl(value) {
+    // แปลงเป็นตัวเลขเพื่อความแน่นอน
+    const vol = Number(value);
+    if (isNaN(vol)) return;
+
+    // สร้าง payload ตามที่ระบบคาดหวัง
+    const payload = {
+        volumeControl: vol
+    };
+
+    // ส่งผ่านฟังก์ชัน sentMessage ของไฟล์นี้
+    sentMessage(payload);
+    console.log('Sent volumeControl via MQTT:', vol);
+}
+
+// ตัวจัดการ input event (debounced) — ใช้เมื่อผู้ใช้ลากสไลเดอร์
+function handleVolumeInputEvent(e) {
+    const val = e.target ? e.target.value : e;
+    // อัปเดต UI (ถ้ามี element แสดงค่า)
+    const volumeValueText = document.getElementById('volumeValueText');
+    if (volumeValueText) volumeValueText.innerText = String(val);
+
+    // debounce เพื่อไม่ให้ยิงบ่อยเกินตอนลาก
+    if (volumeSendTimeout) clearTimeout(volumeSendTimeout);
+    volumeSendTimeout = setTimeout(() => {
+        sendVolumeControl(val);
+    }, VOLUME_DEBOUNCE_MS);
+}
+
+// ส่งทันทีเมื่อปล่อยสไลเดอร์ (change event) เพื่อให้แน่ใจว่าได้ค่าสุดท้าย
+function handleVolumeChangeEvent(e) {
+    const val = e.target ? e.target.value : e;
+    if (volumeSendTimeout) { clearTimeout(volumeSendTimeout); volumeSendTimeout = null; }
+    sendVolumeControl(val);
+}
+
+// ผูก Event listeners หลัง DOM โหลด
+document.addEventListener('DOMContentLoaded', () => {
+    try {
+        const slider = document.getElementById('volumeSlider');
+        if (slider) {
+            // ถ้โค้ดใน home.cshtml ยังมี oninput inline ก็ไม่จำเป็นต้องลบ
+            slider.addEventListener('input', handleVolumeInputEvent);   // ขณะลาก (debounced)
+            slider.addEventListener('change', handleVolumeChangeEvent); // เมื่อปล่อย/เปลี่ยนค่าแน่นอน
+        }
+    } catch (err) {
+        console.error('Volume control bind error:', err);
+    }
+});

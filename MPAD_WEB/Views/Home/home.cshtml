@@ -316,14 +316,30 @@
             </div>
 
             <!-- 🔊 Volume Control Slider -->
+            <!-- Volume Control + Mute Button -->
             <div class="bg-surface-container p-4 rounded-3xl border border-white/5 flex items-center gap-4">
                 <span class="material-symbols-outlined text-cyan-400 text-xl">volume_up</span>
+
                 <div class="flex-1 flex flex-col gap-1">
                     <div class="flex justify-between text-[10px] font-bold tracking-widest text-slate-400 uppercase">
                         <span>OUTPUT VOLUME</span>
                         <span id="volumeValueText" class="text-cyan-400">82</span>
                     </div>
-                    <input type="range" id="volumeSlider" min="0" max="100" value="82" oninput="document.getElementById('volumeValueText').innerText = this.value" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer" />
+
+                    <div class="flex items-center gap-3">
+                        <input type="range" id="volumeSlider" min="0" max="100" value="82"
+                               class="w-full h-1 bg-slate-800 rounded-full"
+                               aria-label="Volume slider" />
+
+                        <!-- ปุ่ม Mute ขนาดเล็ก อยู่ข้างขวา -->
+                        <button id="playingMuteToggle"
+                                type="button"
+                                title="Mute / Unmute"
+                                class="ml-2 w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 text-white flex items-center justify-center transition-all"
+                                onclick="toggleMute(event)">
+                            <span id="playingMuteIcon" class="material-symbols-outlined text-lg">volume_off</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 

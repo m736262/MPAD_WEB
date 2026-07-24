@@ -297,14 +297,21 @@
             </div>
 
             <!-- 🎮 Playback Controls -->
+            <!-- 🎮 Playback Controls (ปรับเป็น 2 ปุ่ม: เล่น/หยุด และ ข้ามเพลง) -->
             <div class="flex items-center justify-center gap-6 py-2">
-                <button type="button" onclick="prevSong(event)" class="w-14 h-14 rounded-full bg-white/5 hover:bg-white/10 active:scale-95 text-white flex items-center justify-center transition-all">
-                    <span class="material-symbols-outlined text-2xl">skip_previous</span>
-                </button>
-                <button type="button" onclick="togglePausePlay(event)" class="w-20 h-20 rounded-full bg-[#00e5ff] text-slate-950 flex items-center justify-center transition-all shadow-[0_0_30px_rgba(0,229,255,0.4)] hover:scale-105 active:scale-95">
+                <!-- Play / Pause (ใหญ่ตรงกลาง) -->
+                <button type="button"
+                        onclick="togglePausePlay(event)"
+                        id="playingMainToggle"
+                        class="w-20 h-20 rounded-full bg-[#00e5ff] text-slate-950 flex items-center justify-center transition-all shadow-[0_0_30px_rgba(0,229,255,0.3)]">
                     <span id="playingFullPauseIcon" class="material-symbols-outlined text-4xl">pause</span>
                 </button>
-                <button type="button" onclick="skipSong(event)" class="w-14 h-14 rounded-full bg-white/5 hover:bg-white/10 active:scale-95 text-white flex items-center justify-center transition-all">
+
+                <!-- Skip Next (ข้างขวา) -->
+                <button type="button"
+                        onclick="skipSong(event)"
+                        id="playingSkip"
+                        class="w-14 h-14 rounded-full bg-white/5 hover:bg-white/10 active:scale-95 text-white flex items-center justify-center transition-all">
                     <span class="material-symbols-outlined text-2xl">skip_next</span>
                 </button>
             </div>

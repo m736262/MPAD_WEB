@@ -369,18 +369,75 @@
                 </div>
             </div>
 
-            <!-- ⏭️ Next Up Mini Banner -->
-            <div class="bg-surface-container p-4 rounded-3xl border border-white/5 flex items-center justify-between cursor-pointer hover:bg-surface-container-high transition-colors" onclick="switchMode('queue')">
+            <!-- Next Up Mini Banner (เพิ่ม id ให้แต่ละส่วน) -->
+            <div id="nextUpCard" class="bg-surface-container p-4 rounded-3xl border border-white/5 flex items-center justify-between cursor-pointer hover:bg-surface-container transition-colors">
                 <div class="flex items-center gap-3">
-                    <img src="https://picsum.photos/100" class="w-10 h-10 rounded-2xl object-cover" alt="Next song cover" />
+                    <img id="nextUpCover" src="https://picsum.photos/100" class="w-10 h-10 rounded-2xl object-cover" alt="Next song cover" />
                     <div class="min-w-0">
-                        <span class="text-[9px] font-extrabold tracking-widest text-cyan-400 uppercase">NEXT UP</span>
-                        <h5 class="font-bold text-white text-sm truncate">Flowers</h5>
-                        <p class="text-xs text-slate-400 truncate">Miley Cyrus • Endless Summer</p>
+                        <div class="text-[9px] font-extrabold tracking-widest text-cyan-400 uppercase">NEXT UP</div>
+                        <h5 id="nextUpTitle" class="font-bold text-white text-sm truncate">Flowers</h5>
+                        <p id="nextUpMeta" class="text-xs text-slate-400 truncate">Miley Cyrus • Endless Summer</p>
                     </div>
                 </div>
-                <span class="material-symbols-outlined text-slate-500">chevron_right</span>
+                <span id="nextUpChevron" onclick="switchMode('queue');" class="material-symbols-outlined text-slate-500">chevron_right</span>
             </div>
+        </div>
+
+        <!-- ====== Effects View (เพิ่มไว้ข้างๆ homeView / searchView / queueView / playingView) ====== -->
+        <div id="effectsView" class="hidden space-y-6 pb-36">
+            <section>
+                <h3 class="text-[11px] uppercase tracking-[0.2em] font-black text-outline-variant mb-4">Sound Board</h3>
+
+                <!-- Grid of effect buttons -->
+                <div class="grid grid-cols-3 gap-4">
+                    <button class="effect-btn bg-surface-container p-4 rounded-2xl flex flex-col items-center justify-center" data-effect="applause" aria-label="Applause">
+                        <span class="material-symbols-outlined text-2xl">celebration</span>
+                        <span class="text-xs mt-2">Applause</span>
+                    </button>
+
+                    <button class="effect-btn bg-surface-container p-4 rounded-2xl flex flex-col items-center justify-center" data-effect="cheer" aria-label="Cheer">
+                        <span class="material-symbols-outlined text-2xl">emoji_events</span>
+                        <span class="text-xs mt-2">Cheer</span>
+                    </button>
+
+                    <button class="effect-btn bg-surface-container p-4 rounded-2xl flex flex-col items-center justify-center" data-effect="laugh" aria-label="Laugh">
+                        <span class="material-symbols-outlined text-2xl">sentiment_satisfied</span>
+                        <span class="text-xs mt-2">Laugh</span>
+                    </button>
+
+                    <button class="effect-btn bg-surface-container p-4 rounded-2xl flex flex-col items-center justify-center" data-effect="air_horn" aria-label="Air Horn">
+                        <span class="material-symbols-outlined text-2xl">campaign</span>
+                        <span class="text-xs mt-2">Air Horn</span>
+                    </button>
+
+                    <button class="effect-btn bg-surface-container p-4 rounded-2xl flex flex-col items-center justify-center" data-effect="boo" aria-label="Boo">
+                        <span class="material-symbols-outlined text-2xl">thumb_down</span>
+                        <span class="text-xs mt-2">Boo</span>
+                    </button>
+
+                    <button class="effect-btn bg-surface-container p-4 rounded-2xl flex flex-col items-center justify-center" data-effect="magic" aria-label="Magic">
+                        <span class="material-symbols-outlined text-2xl">auto_awesome</span>
+                        <span class="text-xs mt-2">Magic</span>
+                    </button>
+
+                    <button class="effect-btn bg-surface-container p-4 rounded-2xl flex flex-col items-center justify-center" data-effect="drumroll" aria-label="Drumroll">
+                        <span class="material-symbols-outlined text-2xl">music_note</span>
+                        <span class="text-xs mt-2">Drumroll</span>
+                    </button>
+
+                    <button class="effect-btn bg-surface-container p-4 rounded-2xl flex flex-col items-center justify-center" data-effect="mystery" aria-label="Mystery">
+                        <span class="material-symbols-outlined text-2xl">help_outline</span>
+                        <span class="text-xs mt-2">Mystery</span>
+                    </button>
+
+                    <button class="effect-btn bg-surface-container p-4 rounded-2xl flex flex-col items-center justify-center" data-effect="stop_all" aria-label="Stop All">
+                        <span class="material-symbols-outlined text-2xl">stop_circle</span>
+                        <span class="text-xs mt-2">Stop All</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- (ถ้าต้องการ) ช่อง Background Chill ถูกตัดออก ตามที่ร้องขอ -->
         </div>
 
     </main>
@@ -405,6 +462,10 @@
         <button onclick="switchMode('playing')" id="navPlaying" class="flex flex-col items-center justify-center w-full text-slate-500 hover:text-primary transition-colors">
             <span class="material-symbols-outlined text-2xl" id="iconPlaying">music_note</span>
             <span class="font-['Plus_Jakarta_Sans'] text-[10px] font-bold uppercase tracking-widest mt-1">Playing</span>
+        </button>
+        <button onclick="switchMode('effects')" id="navEffects" class="flex flex-col items-center justify-center w-full text-slate-500 hover:text-primary transition-colors">
+            <span class="material-symbols-outlined text-2xl">music_note</span>
+            <span class="font-['Plus_Jakarta_Sans'] text-[10px] font-bold uppercase tracking-widest mt-1">Effects</span>
         </button>
     </nav>
 
@@ -539,11 +600,13 @@
             const searchView = document.getElementById('searchView');
             const queueView = document.getElementById('queueView');
             const playingView = document.getElementById('playingView');
+            const effectsView = document.getElementById('effectsView'); // <-- ใหม่
 
             const navHome = document.getElementById('navHome');
             const navSearch = document.getElementById('navSearch');
             const navQueue = document.getElementById('navQueue');
             const navPlaying = document.getElementById('navPlaying');
+            const navEffects = document.getElementById('navEffects'); // <-- ใหม่
 
             const searchBarSection = document.getElementById('searchBarSection');
             const categoryContainer = document.getElementById('categoryContainer');
@@ -553,57 +616,57 @@
             const activeNavClass = "flex flex-col items-center justify-center w-full text-primary";
             const inactiveNavClass = "flex flex-col items-center justify-center w-full text-slate-500 hover:text-primary transition-colors";
 
+            // reset all navs to inactive
             if (navHome) navHome.className = inactiveNavClass;
             if (navSearch) navSearch.className = inactiveNavClass;
             if (navQueue) navQueue.className = inactiveNavClass;
             if (navPlaying) navPlaying.className = inactiveNavClass;
+            if (navEffects) navEffects.className = inactiveNavClass; // reset
 
+            // hide all views by default
+            if (homeView) homeView.classList.add('hidden');
+            if (searchView) searchView.classList.add('hidden');
+            if (queueView) queueView.classList.add('hidden');
+            if (playingView) playingView.classList.add('hidden');
+            if (effectsView) effectsView.classList.add('hidden'); // hide effects by default
+
+            // default visibility for header/search/minibar
+            if (searchBarSection) searchBarSection.classList.remove('hidden');
+            if (categoryContainer) categoryContainer.classList.remove('hidden');
+            if (miniNowPlayingBar) miniNowPlayingBar.classList.remove('hidden');
+
+            // switch
             if (mode === 'search') {
-                if (homeView) homeView.classList.add('hidden');
                 if (searchView) searchView.classList.remove('hidden');
-                if (queueView) queueView.classList.add('hidden');
-                if (playingView) playingView.classList.add('hidden');
-
-                if (searchBarSection) searchBarSection.classList.remove('hidden');
-                if (categoryContainer) categoryContainer.classList.remove('hidden');
-                if (miniNowPlayingBar) miniNowPlayingBar.classList.remove('hidden');
-
                 if (navSearch) navSearch.className = activeNavClass;
             }
             else if (mode === 'queue') {
-                if (homeView) homeView.classList.add('hidden');
-                if (searchView) searchView.classList.add('hidden');
                 if (queueView) queueView.classList.remove('hidden');
-                if (playingView) playingView.classList.add('hidden');
-
                 if (searchBarSection) searchBarSection.classList.add('hidden');
                 if (categoryContainer) categoryContainer.classList.add('hidden');
                 if (miniNowPlayingBar) miniNowPlayingBar.classList.add('hidden');
-
                 if (navQueue) navQueue.className = activeNavClass;
             }
             else if (mode === 'playing') {
-                if (homeView) homeView.classList.add('hidden');
-                if (searchView) searchView.classList.add('hidden');
-                if (queueView) queueView.classList.add('hidden');
                 if (playingView) playingView.classList.remove('hidden');
-
                 if (searchBarSection) searchBarSection.classList.add('hidden');
                 if (categoryContainer) categoryContainer.classList.add('hidden');
                 if (miniNowPlayingBar) miniNowPlayingBar.classList.add('hidden');
-
                 if (navPlaying) navPlaying.className = activeNavClass;
+            }
+            else if (mode === 'effects') {
+                // Effects: hide header/search and mini bar to focus on effects UI (ปรับได้ตามต้องการ)
+                if (effectsView) effectsView.classList.remove('hidden');
+                if (searchBarSection) searchBarSection.classList.add('hidden');
+                if (categoryContainer) categoryContainer.classList.add('hidden');
+                if (miniNowPlayingBar) miniNowPlayingBar.classList.add('hidden');
+                if (navEffects) navEffects.className = activeNavClass;
             }
             else { // Home
                 if (homeView) homeView.classList.remove('hidden');
-                if (searchView) searchView.classList.add('hidden');
-                if (queueView) queueView.classList.add('hidden');
-                if (playingView) playingView.classList.add('hidden');
-
                 if (searchBarSection) searchBarSection.classList.remove('hidden');
                 if (categoryContainer) categoryContainer.classList.remove('hidden');
                 if (miniNowPlayingBar) miniNowPlayingBar.classList.remove('hidden');
-
                 if (navHome) navHome.className = activeNavClass;
                 if (input) input.value = '';
             }

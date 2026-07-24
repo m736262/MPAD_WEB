@@ -719,6 +719,37 @@ function renderQueueUI(data) {
             console.warn('Failed to update audio channel UI from mqtt data:', err);
         }
     }
+
+    // ===== Update Next Up card =====
+    const nextUpCard = document.getElementById('nextUpCard');
+    const nextUpCover = document.getElementById('nextUpCover');
+    const nextUpTitle = document.getElementById('nextUpTitle');
+    const nextUpMeta = document.getElementById('nextUpMeta');
+
+    if (songList.length > 1) {
+        const nextSong = songList[1];
+        if (nextUpTitle) nextUpTitle.innerText = nextSong.title || 'Unknown Title';
+        if (nextUpMeta) {
+            const parts = [];
+            if (nextSong.singer) parts.push(nextSong.singer);
+            if (nextSong.album) parts.push(nextSong.album); // ถ้ามี field album
+            // ถ้ามีผู้เพิ่ม:
+            if (nextSong.username) parts.push(`Added by ${nextSong.username}`);
+            nextUpMeta.innerText = parts.join(' • ');
+        }
+        if (nextUpCover) {
+            if (nextSong.image_url && nextSong.image_url.trim() !== '') {
+                nextUpCover.src = nextSong.image_url;
+                nextUpCover.classList.remove('hidden');
+            } else {
+                nextUpCover.src = ''; // หรือใส่ DEFAULT_COVER
+            }
+        }
+        if (nextUpCard) nextUpCard.classList.remove('hidden');
+    } else {
+        // ซ่อนเมื่อไม่มีคิวถัดไป
+        if (nextUpCard) nextUpCard.classList.add('hidden');
+    }
 }
 
 // ===== Mute control =====

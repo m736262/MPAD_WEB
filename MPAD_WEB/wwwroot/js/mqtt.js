@@ -481,9 +481,6 @@ function renderQueueUI(data) {
         }
     }
 
-    
-
-
     // ==========================================
     // 2. Queue View: เพลงกำลังเล่น (Now Playing)
     // ==========================================
@@ -537,7 +534,6 @@ function renderQueueUI(data) {
         if (nowPlayingPlayOverlay) nowPlayingPlayOverlay.classList.add('hidden');
     }
 
-
     // ==========================================
     // 3. Queue View: Subtitle "Next up..."
     // ==========================================
@@ -562,7 +558,6 @@ function renderQueueUI(data) {
             nextTurnInfo.innerText = "No upcoming songs";
         }
     }
-
 
     // ==========================================
     // 4. Queue View: รายการคิวถัดไป (Queue List)
@@ -614,4 +609,44 @@ function renderQueueUI(data) {
             queueContainer.innerHTML = queueHTML;
         }
     }
+
+    // ===== Update Playing Fullscreen View =====
+    const playingFullCover = document.getElementById('playingFullCover');
+    const playingFullTitle = document.getElementById('playingFullTitle');
+    const playingFullArtist = document.getElementById('playingFullArtist');
+    const playingProgressBar = document.getElementById('playingProgressBar');
+    const playingCurrentTime = document.getElementById('playingCurrentTime');
+    const playingTotalTime = document.getElementById('playingTotalTime');
+    const playingFullPauseIcon = document.getElementById('playingFullPauseIcon');
+
+    // ค่าเริ่มต้นจาก mini/queue ที่คำนวณแล้ว
+    let pfTitle = titleText;
+    let pfArtist = artistText;
+    let pfImage = imageUrl;
+
+    if (songList.length > 0) {
+        pfTitle = songList[0].title || pfTitle;
+        pfArtist = songList[0].singer || pfArtist;
+        pfImage = songList[0].image_url || pfImage;
+    } else if (data.currentSong) {
+        const parts = String(data.currentSong).split(' - ');
+        pfTitle = parts[0] || pfTitle;
+        pfArtist = parts[1] || pfArtist;
+    }
+
+    if (playingFullTitle) playingFullTitle.innerText = pfTitle;
+    if (playingFullArtist) playingFullArtist.innerText = pfArtist;
+    if (playingFullCover) {
+        if (pfImage && pfImage.trim() !== '') {
+            playingFullCover.src = pfImage;
+        } else {
+            // ถ้าต้องการ ให้เปลี่ยนเป็น DEFAULT_COVER หรือ leave as is
+            // playingFullCover.src = DEFAULT_COVER;
+        }
+    }
+
+    if (playingProgressBar) playingProgressBar.style.width = `${progressPercent}%`;
+    if (playingCurrentTime) playingCurrentTime.innerText = elapsedStr;
+    if (playingTotalTime) playingTotalTime.innerText = durationStr;
+    if (playingFullPauseIcon) playingFullPauseIcon.innerText = isPaused ? 'play_arrow' : 'pause';
 }

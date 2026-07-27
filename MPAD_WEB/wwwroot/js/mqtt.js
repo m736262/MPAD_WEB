@@ -40,8 +40,8 @@ function onConnect() {
         client.subscribe(subscribeTopic);
 
         // ดึง Token จาก cookie/storage โดยใช้ getCookie จาก site.js
-        var userToken = typeof getToken === 'function' ? getToken() : (getCookie('token') || '');
-        var authMessage = JSON.stringify({ token: userToken });
+        var userId = typeof getToken === 'function' ? getToken() : (getCookie('userId') || '');
+        var authMessage = JSON.stringify({ deviceId: userId, command: "unregister_user" });
 
         sentMessage(authMessage);
     }

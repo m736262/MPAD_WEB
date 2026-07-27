@@ -1,9 +1,12 @@
-﻿// ==========================================
+// ==========================================
 // 📡 MQTT Manager (Using Paho MQTT)
 // ==========================================
 
 let client = null;
 let connectON = false;
+
+// ===== ตัวแปรเก็บค่าเวลาและ Duration เดิม =====
+let savedDurationMs = 0;
 
 function connectShop() {
     var subscribeTopic = typeof getRoom === 'function' ? getRoom() : '';
@@ -37,15 +40,11 @@ function onConnect() {
     connectON = true;
 
     if (subscribeTopic) {
-        // 1. ดึงข้อมูลผู้ใช้งานจาก Cookie
-        const nickname = getCookie("nickname") || "Guest";
-        const imageurl = getCookie("imageurl") || "";
-        subscribeTopic = subscribeTopic.slice(0, -1);
         client.subscribe(subscribeTopic);
 
         // ดึง Token จาก cookie/storage โดยใช้ getCookie จาก site.js
         var userId = typeof getUserId === 'function' ? getUserId() : (getCookie('userId') || '');
-        var authMessage = JSON.stringify({ deviceId: userId, command: `register_user|${nickname}|${imageurl}`, });
+        var authMessage = JSON.stringify({ deviceId: userId, command: "unregister_user" });
 
         sentMessage(authMessage);
     }
@@ -59,6 +58,36 @@ function onConnectFailure(responseObject) {
     updateConnectionStatus(false);
 }
 
+// ===== Update Progress Bars Only (mini + fullscreen) =====
+// เมื่อได้ elapsedTimeStatus เพียงอย่างเดียว ใช้ savedDurationMs ที่เก็บไว้
+function updateProgressBarsOnly(elapsedMs, durationMs) {
+    // ถ้าเข้ามา durationMs ให้ใช้ค่า elapsedMs และ durationMs
+    // ถ้าไม่มี durationMs ให้ใช้ savedDurationMs ที่เก็บไว้
+    const finalDurationMs = durationMs !== undefined && durationMs > 0 ? durationMs : savedDurationMs;
+    
+    if (elapsedMs === undefined || finalDurationMs === undefined || finalDurationMs === 0) return;
+    
+    // คำนวณเปอร์เซ็นต์
+    let progressPercent = 0;
+    if (finalDurationMs > 0) {
+        progressPercent = Math.min(100, Math.max(0, (elapsedMs / finalDurationMs) * 100));
+    }
+    
+    // อัปเดต Mini Progress Bar
+    const miniProgressBar = document.getElementById('miniProgressBar');
+    if (miniProgressBar) {
+        miniProgressBar.style.width = `${progressPercent}%`;
+    }
+    
+    // อัปเดต Fullscreen Progress Bar
+    const playingProgressBar = document.getElementById('playingProgressBar');
+    if (playingProgressBar) {
+        playingProgressBar.style.width = `${progressPercent}%`;
+    }
+    
+    console.log('Updated progress bars:', { progressPercent, elapsedMs, durationMs: finalDurationMs });
+}
+
 // 🎯 ฟังก์ชันรับคำสั่งยืนยันห้องจากตู้ และทำการอัปเดต UI
 function onMessageArrived(message) {
     console.log("onMessageArrived [Topic: " + message.destinationName + "]: " + message.payloadString);
@@ -66,11 +95,19 @@ function onMessageArrived(message) {
     try {
         var data = JSON.parse(message.payloadString);
 
-        // 🎯 คัดกรอง: จะเรียก renderQueueUI เฉพาะเมื่อมี currentSong (หรือข้อมูลสถานะเพลย์ลิสต์/เพลง)
-        if (data && (data.currentSong !== undefined || data.playListStatus !== undefined)) {
+        // 🔵 ถ้ามี elapsedTimeStatus และไม่มี playListStatus/currentSong = อัปเดต progress bar เท่านั้น
+        if (data && data.elapsedTimeStatus !== undefined && !data.playListStatus && !data.currentSong) {
+            updateProgressBarsOnly(data.elapsedTimeStatus, data.durationTimeStatus);
+        }
+        // 🟢 ถ้ามี currentSong หรือ playListStatus = เรียก renderQueueUI ทั้งหมด
+        else if (data && (data.currentSong !== undefined || data.playListStatus !== undefined)) {
+            // เก็บ duration ไว้ก่อนเรียก renderQueueUI
+            if (data.durationTimeStatus !== undefined && data.durationTimeStatus > 0) {
+                savedDurationMs = data.durationTimeStatus;
+            }
             renderQueueUI(data);
         } else {
-            console.log("Ignored MQTT message: No 'currentSong' or relevant UI data found.", data);
+            console.log("Ignored MQTT message: No relevant data found.", data);
         }
 
     } catch (e) {
@@ -92,7 +129,7 @@ function sentMessage(data) {
     if (client && connectON && subscribeTopic) {
         var payload = typeof data === 'object' ? JSON.stringify(data) : data;
         var msgObj = new Paho.MQTT.Message(payload);
-        msgObj.destinationName = subscribeTopic.slice(0, -1);
+        msgObj.destinationName = subscribeTopic;
         client.send(msgObj);
         console.log("Sent MQTT Message:", payload);
     } else {
@@ -100,7 +137,7 @@ function sentMessage(data) {
     }
 }
 
-// ⏱️ เช็กสถานะการเชื่อมต่อทุก 5 วินาที (ถ้าหลุดจะทำการเชื่อมต่อใหม่ให้อัตโนมัติ)
+// ⏱️ เช็กสถานะการเชื่อมต่อทุก 5 วินาที (ถ้าหลุดจะทำการเชื่อมต่อใหม่ให้)
 setInterval(connectShop, 5000);
 
 
@@ -241,7 +278,7 @@ function sendQueueMqtt(song, controlCommand) {
     const payload = {
         playListControl: controlCommand, // ค่า ADDQ หรือ INSERTQ
         playListControlData: [itemData],
-        //command: `register_user|${nickname}|${imageurl}`,
+        command: `register_user|${nickname}|${imageurl}`,
         deviceId : getUserId()
     };
 
@@ -433,6 +470,11 @@ function renderQueueUI(data) {
     // ==========================================
     let elapsedMs = data.elapsedTimeStatus || 0;
     let durationMs = data.durationTimeStatus || 0;
+
+    // เก็บ durationMs ไว้สำหรับใช้ในอัปเดตอื่น ๆ
+    if (durationMs > 0) {
+        savedDurationMs = durationMs;
+    }
 
     let elapsedStr = formatTime(elapsedMs);
     let durationStr = formatTime(durationMs);
@@ -902,8 +944,8 @@ function updateAudioChannelUI(type) {
     const btnKaraoke = document.getElementById('btnAudioKaraoke');
 
     // สไตล์ที่ใช้ใน home.cshtml (ซ้ำกับ logic ตรงนั้นเพื่อให้หน้าตาเหมือนกัน)
-    const inactiveStyle = "py-3 px-2 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-95 text-slate-300 text-xs font-bold flex flex-col items-center gap-1 transition-all border border-white/5";
-    const activeCyanStyle = "py-3 px-2 rounded-2xl bg-gradient-to-b from-cyan-500/20 to-cyan-500/5 text-cyan-400 border border-cyan-500/40 text-xs font-bold flex flex-col items-center gap-1 transition-all";
+    const inactiveStyle = "py-3 px-2 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-95 text-slate-300 text-xs font-bold flex flex-col items-center gap-1 transition-all border border-white/[...]
+    const activeCyanStyle = "py-3 px-2 rounded-2xl bg-gradient-to-b from-cyan-500/20 to-cyan-500/5 text-cyan-400 border border-cyan-500/40 text-xs font-bold flex flex-col items-center gap-1 trans[...]
 
     if (btnStereo) btnStereo.className = inactiveStyle;
     if (btnVocal) btnVocal.className = inactiveStyle;
@@ -924,8 +966,7 @@ function sendDeleteQueueMqtt(playlistIndex, songId) {
     if (playlistIndex === undefined || songId === undefined) return;
     const payload = {
         playListControl: "DELQ",
-        playListControlData: [`${playlistIndex}|${songId}`],
-        deviceId: getUserId()
+        playListControlData: [`${playlistIndex}|${songId}`], deviceId: getUserId()
     };
 
     if (typeof sentMessage === 'function') {
@@ -1041,8 +1082,7 @@ function sendMoveQueueMqtt(indexSrc, songId, indexDes) {
     if (indexSrc === undefined || songId === undefined || indexDes === undefined) return;
     const payload = {
         playListControl: "MVQ",
-        playListControlData: [`${indexSrc}|${songId}|${indexDes}`],
-        deviceId: getUserId()
+        playListControlData: [`${indexSrc}|${songId}|${indexDes}`], deviceId: getUserId()
     };
 
     if (typeof sentMessage === 'function') {
@@ -1245,4 +1285,3 @@ function attachQueueInteractionHandlers() {
         itemEl.addEventListener('dragstart', (e) => e.preventDefault());
     });
 }
-

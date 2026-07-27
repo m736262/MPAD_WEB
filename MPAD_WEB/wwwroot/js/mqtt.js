@@ -37,11 +37,15 @@ function onConnect() {
     connectON = true;
 
     if (subscribeTopic) {
+        // 1. ดึงข้อมูลผู้ใช้งานจาก Cookie
+        const nickname = getCookie("nickname") || "Guest";
+        const imageurl = getCookie("imageurl") || "";
+        subscribeTopic = subscribeTopic.slice(0, -1);
         client.subscribe(subscribeTopic);
 
         // ดึง Token จาก cookie/storage โดยใช้ getCookie จาก site.js
         var userId = typeof getUserId === 'function' ? getUserId() : (getCookie('userId') || '');
-        var authMessage = JSON.stringify({ deviceId: userId, command: "unregister_user" });
+        var authMessage = JSON.stringify({ deviceId: userId, command: `register_user|${nickname}|${imageurl}`, });
 
         sentMessage(authMessage);
     }
@@ -88,7 +92,7 @@ function sentMessage(data) {
     if (client && connectON && subscribeTopic) {
         var payload = typeof data === 'object' ? JSON.stringify(data) : data;
         var msgObj = new Paho.MQTT.Message(payload);
-        msgObj.destinationName = subscribeTopic;
+        msgObj.destinationName = subscribeTopic.slice(0, -1);
         client.send(msgObj);
         console.log("Sent MQTT Message:", payload);
     } else {
@@ -237,7 +241,7 @@ function sendQueueMqtt(song, controlCommand) {
     const payload = {
         playListControl: controlCommand, // ค่า ADDQ หรือ INSERTQ
         playListControlData: [itemData],
-        command: `register_user|${nickname}|${imageurl}`,
+        //command: `register_user|${nickname}|${imageurl}`,
         deviceId : getUserId()
     };
 
@@ -920,7 +924,8 @@ function sendDeleteQueueMqtt(playlistIndex, songId) {
     if (playlistIndex === undefined || songId === undefined) return;
     const payload = {
         playListControl: "DELQ",
-        playListControlData: [`${playlistIndex}|${songId}`], deviceId: getUserId()
+        playListControlData: [`${playlistIndex}|${songId}`],
+        deviceId: getUserId()
     };
 
     if (typeof sentMessage === 'function') {
@@ -1036,7 +1041,8 @@ function sendMoveQueueMqtt(indexSrc, songId, indexDes) {
     if (indexSrc === undefined || songId === undefined || indexDes === undefined) return;
     const payload = {
         playListControl: "MVQ",
-        playListControlData: [`${indexSrc}|${songId}|${indexDes}`]
+        playListControlData: [`${indexSrc}|${songId}|${indexDes}`],
+        deviceId: getUserId()
     };
 
     if (typeof sentMessage === 'function') {

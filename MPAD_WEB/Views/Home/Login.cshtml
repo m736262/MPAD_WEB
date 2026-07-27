@@ -210,6 +210,7 @@
             </a>
         </div>
     </main>
+    <script src="~/js/site.js" asp-append-version="true"></script>
 
     <!-- Paho MQTT Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.js" type="text/javascript"></script>
@@ -397,8 +398,8 @@
 
         async function Login() {
 
-            // const targetApiUrl = '@loginApiUrl';
-            const targetApiUrl = 'https://localhost:7266/';
+            const targetApiUrl = '@loginApiUrl';
+            //const targetApiUrl = 'https://localhost:7266/';
             requestData.appKey = appKey;
             requestData.id = getGuestDeviceId();
             requestData.shopid = currentRoom.split('/')[2];

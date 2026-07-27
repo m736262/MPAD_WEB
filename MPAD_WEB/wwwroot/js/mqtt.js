@@ -237,7 +237,8 @@ function sendQueueMqtt(song, controlCommand) {
     const payload = {
         playListControl: controlCommand, // ค่า ADDQ หรือ INSERTQ
         playListControlData: [itemData],
-        command: `register_user|${nickname}|${imageurl}`
+        command: `register_user|${nickname}|${imageurl}`,
+        deviceId : getUserId()
     };
 
     // 4. ส่งข้อความผ่าน sentMessage() ของ Paho MQTT
@@ -347,7 +348,7 @@ function togglePausePlay(event) {
     const command = isPaused ? "PAUSE" : "PLAY";
 
     // ส่งคำสั่งผ่าน MQTT
-    sentMessage({ playControl: command });
+    sentMessage({playControl: command,deviceId: getUserId() });
 
     // อัปเดตไอคอนของปุ่มต่างๆ ที่เกี่ยวข้อง (ไม่เปลี่ยนขนาด)
     const btnIcon = document.getElementById('btnPauseIcon');               // mini bar
@@ -376,7 +377,7 @@ function skipSong(event) {
     if (event) event.stopPropagation();
 
     //if (confirm("ต้องการข้ามเพลงนี้หรือไม่?")) {
-        sentMessage({ playControl: "stop" });
+    sentMessage({ playControl: "stop", deviceId: getUserId() });
     //}
 }
 
@@ -769,7 +770,7 @@ function toggleMute(e) {
 
     // ส่ง MQTT เฉพาะเมื่อเชื่อมต่อ (optional)
     if (typeof sentMessage === 'function') {
-        sentMessage({ muteControl: action });
+        sentMessage({ muteControl: action, deviceId: getUserId() });
     } else {
         console.warn("sentMessage() not available to send muteControl:", action);
     }
@@ -819,7 +820,7 @@ function sendVolumeControl(value) {
 
     // สร้าง payload ตามที่ระบบคาดหวัง
     const payload = {
-        volumeControl: vol
+        volumeControl: vol, deviceId: getUserId()
     };
 
     // ส่งผ่านฟังก์ชัน sentMessage ของไฟล์นี้
@@ -877,7 +878,7 @@ function sendMqttChannelCommand(type) {
         return;
     }
 
-    const payload = { audioControl: t };
+    const payload = { audioControl: t, deviceId: getUserId() };
 
     // ตรวจการเชื่อมต่อก่อน (optional)
     if (typeof sentMessage === 'function') {
@@ -919,7 +920,7 @@ function sendDeleteQueueMqtt(playlistIndex, songId) {
     if (playlistIndex === undefined || songId === undefined) return;
     const payload = {
         playListControl: "DELQ",
-        playListControlData: [`${playlistIndex}|${songId}`]
+        playListControlData: [`${playlistIndex}|${songId}`], deviceId: getUserId()
     };
 
     if (typeof sentMessage === 'function') {

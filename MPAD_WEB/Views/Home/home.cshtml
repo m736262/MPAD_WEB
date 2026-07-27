@@ -146,18 +146,67 @@
         </section>
 
         <!-- ================= VIEW 1: HOME ================= -->
-        <div id="homeView" class="space-y-6">
-            <section>
-                <h3 class="text-[11px] uppercase tracking-[0.2em] font-black text-outline-variant mb-4">Trending Now</h3>
-                <div class="space-y-3">
-                    <div class="bg-surface-container p-4 rounded-2xl flex items-center justify-between hover:bg-surface-container-high transition-colors">
-                        <div class="min-w-0 pr-4">
-                            <h4 class="font-bold text-on-surface text-base truncate">Die With A Smile</h4>
-                            <p class="text-xs text-on-surface-variant truncate mt-0.5">Bruno Mars & Lady Gaga</p>
+        <div id="homeView" class="space-y-6 pb-36">
+            <!-- Popular Songs -->
+            <section class="mb-10">
+                <div class="flex justify-between items-center mb-5">
+                    <h2 class="text-xl font-headline font-bold">Popular</h2>
+                    <button class="text-primary text-[10px] font-bold uppercase tracking-widest">See All</button>
+                </div>
+                <!-- 📌 ใส่ id="tophitContainer" ตรงนี้ -->
+                <div id="tophitContainer" class="flex gap-5 overflow-x-auto no-scrollbar pb-2 snap-x">
+                    <!-- Loading State เบื้องต้น -->
+                    <div class="text-xs text-on-surface-variant py-4">Loading top hits...</div>
+                </div>
+            </section>
+            <!-- New Releases -->
+            <section class="mb-10">
+                <div class="flex justify-between items-center mb-5">
+                    <h2 class="text-xl font-headline font-bold">New Releases</h2>
+                    <button class="text-primary text-[10px] font-bold uppercase tracking-widest">See All</button>
+                </div>
+                <div class="flex gap-5 overflow-x-auto no-scrollbar pb-2 snap-x">
+                    <!-- Song Card 4 -->
+                    <div class="flex-none w-44 snap-start group">
+                        <div class="relative mb-3 aspect-square overflow-hidden rounded-2xl card-bg shadow-xl transition-transform duration-300 group-hover:scale-[1.02]">
+                            <img class="w-full h-full object-cover opacity-90" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCtiUpZjpxhVN5J2KJJdUj9e4LD3yONrpzM_f1sVrH89ZmrU-ACvNynoI0eEcHa24d3OMaepPLWnINhhcjj5fZbIIqx2EXNoBeUQc9iiWjFHopntBhfboOy5m9E8dPwvm4jwgUoPgzzf3zi-DzTjR0ziu69SIj-SzeAM8TiSsKgqHDF4pGAk-vclysP18HwOM9vYfekQmDKxhByqF61HBodWlYcEefsC_zDnzYf516jAEsZ8RvzsQju2zRN967dDyWzT42n_5L-dlv2" />
+                            <div class="absolute bottom-3 right-3">
+                                <button class="w-9 h-9 bg-primary text-on-primary rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform">
+                                    <span class="material-symbols-outlined text-xl" data-icon="add" style="font-variation-settings: 'wght' 600;">add</span>
+                                </button>
+                            </div>
+                            <span class="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded text-[9px] font-bold text-white border border-white/10 uppercase">EN</span>
                         </div>
-                        <button class="h-10 w-10 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-black flex items-center justify-center shrink-0 transition-all active:scale-90">
-                            <span class="material-symbols-outlined text-xl">add</span>
-                        </button>
+                        <h3 class="font-bold text-sm truncate mb-0.5 group-hover:text-primary transition-colors">Seven</h3>
+                        <p class="text-on-surface-variant text-xs">Jungkook ft. Latto</p>
+                    </div>
+                    <!-- Song Card 5 -->
+                    <div class="flex-none w-44 snap-start group">
+                        <div class="relative mb-3 aspect-square overflow-hidden rounded-2xl card-bg shadow-xl transition-transform duration-300 group-hover:scale-[1.02]">
+                            <img class="w-full h-full object-cover opacity-90" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBLUnsvX1EpS5r4RhOGBxpzsQt-4fGTEUnfE30jgsPP7kqq3eEsoMFcDdAVcaSUWpR4Dmg8Y0y3qb7lYLz3FTbkYQ1dVitmubW_GNZlhG7MR8UDMHa04ar9GQjv0Dohu7fID3gmvh-lqiRov0BGf3WYi9DaNmxQUOwi7dQxnekVtLDw1h2Th5cPW3zjT_WymtaIfoKoAjTX-auPEzH7I7_6AvWKpzBqRKk_es6QxpoY4_5krY8K9efihEY_aRawbyHg1j9NhXYaNbR5" />
+                            <div class="absolute bottom-3 right-3">
+                                <button class="w-9 h-9 bg-primary text-on-primary rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform">
+                                    <span class="material-symbols-outlined text-xl" data-icon="add" style="font-variation-settings: 'wght' 600;">add</span>
+                                </button>
+                            </div>
+                            <span class="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded text-[9px] font-bold text-white border border-white/10 uppercase">EN</span>
+                        </div>
+                        <h3 class="font-bold text-sm truncate mb-0.5 group-hover:text-primary transition-colors">Vampire</h3>
+                        <p class="text-on-surface-variant text-xs">Olivia Rodrigo</p>
+                    </div>
+                    <!-- Song Card 6 -->
+                    <div class="flex-none w-44 snap-start group">
+                        <div class="relative mb-3 aspect-square overflow-hidden rounded-2xl card-bg shadow-xl transition-transform duration-300 group-hover:scale-[1.02]">
+                            <img class="w-full h-full object-cover opacity-90" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBva4z11-YcaxNMhHgF8GP9Uf3QDuyrFfgamw43sI6_AMkfaDzZn7_-0vi9UNDk9y8mnVJ2Ciyz_K4vSx-Iam-Wq3h1WLK_nDFVl-yJeEHjLdJnwUDevbqPwK-XO0_yn0ApXMVY5J3ZngUSHJB2kmeGd8Vz5txcHmYt5H_MP54O7mMUdjFkCe6wPp-S4hsGWLhZc2KXryLnazlS1zfAQ1-lct4ihjX9J8LvSqBcaUpSIOr494z_qHUZJBzsBkU1-jhMCNk1FfECkbaQ" />
+                            <div class="absolute bottom-3 right-3">
+                                <button class="w-9 h-9 bg-primary text-on-primary rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform">
+                                    <span class="material-symbols-outlined text-xl" data-icon="add" style="font-variation-settings: 'wght' 600;">add</span>
+                                </button>
+                            </div>
+                            <span class="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded text-[9px] font-bold text-white border border-white/10 uppercase">EN</span>
+                        </div>
+                        <h3 class="font-bold text-sm truncate mb-0.5 group-hover:text-primary transition-colors">Dance The Night</h3>
+                        <p class="text-on-surface-variant text-xs">Dua Lipa</p>
                     </div>
                 </div>
             </section>

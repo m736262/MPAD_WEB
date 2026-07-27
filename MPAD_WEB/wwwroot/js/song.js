@@ -13,7 +13,7 @@ const RECENT_SEARCH_KEY = 'karaoke_recent_searches';
 const MAX_RECENT_ITEMS = 5;
 const DEFAULT_COVER = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMTAwIDEwMCI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIHJ4PSIxNiIgZmlsbD0iIzJEMzc0OCIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjI1IiBmaWxsPSIjZmZmZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDgiLz48cGF0aCBmaWxsPSIjQTBBRUMwIiBkPSJNNTUgMzV2MTQuMThjLTEuMDUtLjU0LTIuMzUtLjg1LTMuNzUtLjg1LTQuNiAwLTguMzMgMy43My04LjMzIDguMzNzMy43MyA4LjMzIDguMzMgOC43MyA4LjMzLTMuNzMgOC43My04LjMzVjQxLjY3aDEwVjM1SDU1eiIvPjwvc3ZnPg==';
 
-function getToken() { return typeof getCookie === 'function' ? (getCookie('token') || '') : ''; }
+function getToken() { return typeof getCookie === 'function' ? (getCookie('userToken') || '') : ''; }
 function getUserId() { return typeof getCookie === 'function' ? (getCookie('userId') || 'GUEST') : 'GUEST'; }
 function getAppkey() { return typeof getCookie === 'function' ? (getCookie('appKey') || '') : ''; }
 function getRoom() { return typeof getCookie === 'function' ? (getCookie('currentRoom') || '') : ''; }
@@ -411,6 +411,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchCategories();
     renderRecentSearches();
     fetchSongs('', '', true);
+    fetchTopHitSongs(); 
 });
 
 
@@ -440,3 +441,114 @@ window.addEventListener('scroll', () => {
         backToTopBtn.classList.remove('opacity-100', 'pointer-events-auto');
     }
 });
+
+// ==========================================
+// 🔥 Top Hit Songs Fetcher & Renderer
+// ==========================================
+
+async function fetchTopHitSongs() {
+    const tophitContainer = document.getElementById('tophitContainer');
+    if (!tophitContainer) return;
+
+    const rawUrl = window.loginApiUrl && window.loginApiUrl.trim() !== '' ? window.loginApiUrl : 'https://localhost:7266';
+    const baseUrl = rawUrl.replace(/\/+$/, '');
+    const roomParts = getRoom().split('/');
+
+    // Parameter สำหรับส่งไปยัง API /song/tophit
+    const topHitParam = {
+        shopid: roomParts[2] || ''
+    };
+
+    const payload = {
+        appKey: getAppkey(),
+        id: getUserId(),
+        token: getToken(),
+        data: JSON.stringify(topHitParam)
+    };
+
+    try {
+        const response = await fetch(`${baseUrl}/song/tophit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+        const result = await response.json();
+
+        if (result.successFlag) {
+            const songList = typeof result.data === 'string' ? JSON.parse(result.data) : result.data;
+            renderTopHitList(songList || []);
+        } else {
+            console.warn('Fetch TopHit failed:', result.msg);
+            tophitContainer.innerHTML = `<div class="text-xs text-on-surface-variant py-2">No top hits available.</div>`;
+        }
+    } catch (error) {
+        console.error('Fetch TopHit Error:', error);
+        tophitContainer.innerHTML = `<div class="text-xs text-red-400 py-2">Failed to load top hits.</div>`;
+    }
+}
+
+function renderTopHitList(songs) {
+    const tophitContainer = document.getElementById('tophitContainer');
+    if (!tophitContainer) return;
+
+    if (!songs || songs.length === 0) {
+        tophitContainer.innerHTML = `<div class="text-xs text-on-surface-variant py-2">No top hits available.</div>`;
+        return;
+    }
+
+    const baseImgUrl = window.imgUrl || '/images/';
+    let html = '';
+
+    songs.forEach(song => {
+        const rawTitle = song.songname || song.songname_e || 'Unknown Title';
+        const rawSinger = song.singername || song.singername_e || 'Unknown Artist';
+
+        let imgSrc = DEFAULT_COVER;
+        if (song.image && song.image.trim() !== '') {
+            imgSrc = song.image.startsWith('http') ? song.image : `${baseImgUrl}${song.image}`;
+        }
+
+        // เตรียม Data สำหรับส่งให้ระบบ Queue หรือ Player
+        const songData = {
+            id: song.songid || '',
+            title: rawTitle,
+            singer: rawSinger,
+            hdd: song.hdd || '0',
+            image_url: imgSrc,
+            category: song.category || ''
+        };
+
+        const songJson = JSON.stringify(songData).replace(/"/g, '&quot;');
+
+        html += `
+            <div class="flex-none w-44 snap-start group">
+                <div class="relative mb-3 aspect-square overflow-hidden rounded-2xl bg-surface-container-high shadow-xl transition-transform duration-300 group-hover:scale-[1.02]">
+                    <img class="w-full h-full object-cover opacity-90" 
+                         src="${imgSrc}" 
+                         alt="${escapeHtml(rawTitle)}" 
+                         onerror="handleImgError(this)" />
+                    
+                    <div class="absolute bottom-3 right-3">
+                        <button onclick="addToQueue(${songJson})" 
+                                class="w-9 h-9 bg-primary text-on-primary rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform">
+                            <span class="material-symbols-outlined text-xl" style="font-variation-settings: 'wght' 600;">add</span>
+                        </button>
+                    </div>
+
+                    ${song.category ? `
+                        <span class="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded text-[9px] font-bold text-white border border-white/10 uppercase">
+                            ${escapeHtml(song.category)}
+                        </span>
+                    ` : ''}
+                </div>
+                <h3 class="font-bold text-sm truncate mb-0.5 group-hover:text-primary transition-colors">${escapeHtml(rawTitle)}</h3>
+                <p class="text-on-surface-variant text-xs truncate">${escapeHtml(rawSinger)}</p>
+            </div>
+        `;
+    });
+
+    tophitContainer.innerHTML = html;
+}

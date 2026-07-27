@@ -427,7 +427,7 @@
                     // เรียกใช้ setCookie จาก JS ส่วนกลางได้เลย
                     setCookie("appKey", appKey, 7);
                     setCookie("userToken", result.token || "", 7);
-                    setCookie("userId", result.id || "", 7);
+                    setCookie("userId", requestData.id || "", 7);
                     setCookie("currentRoom", currentRoom, 7);
                     setCookie("nickname", document.getElementById("nickname").value, 7);
                     setCookie("imageurl", "urldisplay", 7);
